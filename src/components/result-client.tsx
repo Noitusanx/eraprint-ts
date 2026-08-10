@@ -52,8 +52,6 @@ function ResultLoading() {
           <Link className="wordmark" href="/">
             EraPrint
           </Link>
-
-          <span className="result-version">ERA PROFILE</span>
         </header>
 
         <div className="result-processing-body">
