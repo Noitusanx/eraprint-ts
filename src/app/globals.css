@@ -2056,6 +2056,26 @@ button {
 }
 
 @media (max-width: 768px) {
+  .landing-shell,
+  .game-shell,
+  .result-shell {
+    min-height: 0;
+  }
+
+  .game-card {
+    min-height: 0;
+  }
+
+  .question-stage {
+    margin: 54px 0 18px;
+  }
+
+  .empty-result-card,
+  .match-invite-card {
+    margin: clamp(28px, 6vh, 56px) auto;
+    min-height: 0;
+  }
+
   .dominant-grid,
   .circle-member-grid,
   .circle-result-members {
@@ -2089,6 +2109,10 @@ button {
     opacity: 0.25;
   }
 
+  .ambient-two {
+    bottom: 0;
+  }
+
   .landing-shell,
   .game-shell,
   .result-shell {
@@ -2117,8 +2141,19 @@ button {
     place-items: start stretch;
   }
 
+  .landing-shell {
+    display: flex;
+    min-height: 100dvh;
+    flex-direction: column;
+  }
+
   .landing-card {
-    min-height: calc(100svh - 16px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    display: flex;
+    min-height: calc(100svh - 16px);
+    min-height: calc(
+      100dvh - max(8px, env(safe-area-inset-top)) - max(8px, env(safe-area-inset-bottom))
+    );
+    flex-direction: column;
   }
 
   .brand-mark {
@@ -2132,7 +2167,8 @@ button {
   }
 
   .hero-copy {
-    margin-top: clamp(52px, 14svh, 92px);
+    margin-top: auto;
+    padding-top: 32px;
   }
 
   .hero-copy br {
@@ -2162,11 +2198,12 @@ button {
   }
 
   .feature-strip {
-    margin-top: 44px;
+    margin-top: auto;
+    padding-top: 16px;
   }
 
   .game-card {
-    min-height: calc(100svh - 16px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    min-height: 0;
     padding: 18px;
   }
 
@@ -2389,7 +2426,7 @@ button {
   .empty-result-card,
   .match-invite-card {
     width: 100%;
-    min-height: calc(100svh - 16px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    min-height: 0;
     padding: 28px 20px;
   }
 
@@ -2551,10 +2588,6 @@ button {
 
   .game-card {
     padding: 16px;
-  }
-
-  .hero-copy {
-    margin-top: 46px;
   }
 
   .hero-copy h1 {
