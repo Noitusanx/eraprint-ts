@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "rootDir": "src/lib",
+    "outDir": "dist-check"
+  },
+  "include": [
+    "src/lib/data/catalog.ts",
+    "src/lib/scoring/types.ts",
+    "src/lib/scoring/scoring-engine.ts"
+  ]
+}
