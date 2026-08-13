@@ -86,22 +86,51 @@ export function LivingResultPanel({ snapshotId, result }: { snapshotId: string; 
         </section>
       )}
       <section className="living-refine-panel">
-        <div>
-          <p className="eyebrow">LIVING ERAPRINT</p>
-          <h2>Your EraPrint doesn&apos;t have to stop here.</h2>
-          <p className="living-answer-count">
-            You&apos;ve answered {state.answerCount} choices.
-          </p>
-          {state.remainingCount >= 3 ? (
-            <p>Three more can give your profile more to work with.</p>
-          ) : state.remainingCount === 0 ? (
-            <p>You&apos;ve answered every question available right now.</p>
-          ) : (
-            <p>There aren&apos;t enough new questions left for another round.</p>
-          )}
-        </div>
-        {state.canRefine && <Link className="secondary-button" href={`/refine/${snapshotId}`}>Refine my EraPrint</Link>}
-        {!state.isLatest && <small>Continue from your latest EraPrint result.</small>}
+        {state.isLatest ? (
+          <div>
+            <p className="eyebrow">LIVING ERAPRINT</p>
+            <h2>Your EraPrint doesn&apos;t have to stop here.</h2>
+            <p className="living-answer-count">
+              You&apos;ve answered {state.activeRefinement?.answeredCount ?? state.answerCount} choices.
+            </p>
+            {state.remainingCount === 0
+              ? <p>You&apos;ve answered every choice available right now.</p>
+              : state.activeRefinement
+                ? <p>Your refinement is already in progress.</p>
+                : <p>Keep going for as long as you want. Your progress is saved automatically.</p>}
+          </div>
+        ) : (
+          <div className="living-earlier-result">
+            <p className="eyebrow">LIVING ERAPRINT</p>
+            <h2>You&apos;re viewing an earlier EraPrint.</h2>
+            <p>Your newest result is ready whenever you want to continue.</p>
+            {state.latestSnapshotId && (
+              <Link className="secondary-button" href={`/result/${state.latestSnapshotId}`}>
+                View latest EraPrint
+              </Link>
+            )}
+          </div>
+        )}
+        {state.isLatest && state.activeRefinement && (
+          <div className="living-refine-actions">
+            <div className="living-refine-option">
+              <strong>Continue your refinement</strong>
+              <div className="living-refine-support">
+                <span>{state.activeRefinement.remainingCount} choices remain.</span>
+              </div>
+              <Link className="secondary-button" href={`/refine/${snapshotId}`}>
+                Resume refinement
+              </Link>
+            </div>
+          </div>
+        )}
+        {state.isLatest && !state.activeRefinement && state.remainingCount > 0 && (
+          <div className="living-refine-actions">
+            <div className="living-refine-option living-refine-option-primary">
+              <Link className="primary-button" href={`/refine/${snapshotId}`}>Refine your EraPrint</Link>
+            </div>
+          </div>
+        )}
       </section>
     </>
   );

@@ -84,6 +84,11 @@ delete from public.eraprint_match_invites;
 delete from public.eraprint_snapshot_answers;
 delete from public.eraprint_trait_scores;
 
+-- Session answers and sessions precede snapshots because resumable refinement
+-- sessions reference their immutable base snapshot with ON DELETE RESTRICT.
+delete from public.answers;
+delete from public.game_sessions;
+
 -- Living EraPrint snapshots form a self-referencing immutable history chain
 -- with ON DELETE RESTRICT. Detach only that transactional history link before
 -- deleting every snapshot; no result values or reference data are modified.
@@ -92,8 +97,6 @@ set previous_snapshot_id = null
 where previous_snapshot_id is not null;
 
 delete from public.eraprint_snapshots;
-delete from public.answers;
-delete from public.game_sessions;
 delete from public.profiles;
 
 -- ---------------------------------------------------------------------------

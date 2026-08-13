@@ -17,6 +17,7 @@ import type { PersistenceStatus } from "@/lib/repositories/eraprint-repository";
 import { createMatchInvite } from "@/lib/repositories/era-match-repository";
 import { createCircle } from "@/lib/repositories/circle-repository";
 import { LivingResultPanel } from "./living-result-panel";
+import { TraitScoreDisplay } from "./trait-score-display";
 
 export type ShareSource =
   | {
@@ -34,21 +35,8 @@ export type ResultDisplayProps = {
   persistence?: PersistenceStatus | null; // Optional, only shown for local results
   backToMatchId?: string;
   backToCircleResultId?: string;
+  backToCircleLobbyId?: string;
 };
-
-function TraitBar({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="trait-row">
-      <div className="trait-row-head">
-        <span>{label}</span>
-        <strong>{Math.round(value)}</strong>
-      </div>
-      <div className="trait-track">
-        <div className="trait-fill" style={{ width: `${value}%` }} />
-      </div>
-    </div>
-  );
-}
 
 function EraBar({
   name,
@@ -78,6 +66,7 @@ export function ResultDisplay({
   persistence,
   backToMatchId,
   backToCircleResultId,
+  backToCircleLobbyId,
 }: ResultDisplayProps) {
   const router = useRouter();
   const [copied, setCopied] = useState(false);
@@ -341,69 +330,75 @@ export function ResultDisplay({
               <p className="eyebrow">LIVING PROFILE</p>
               <h2>Your strongest signals</h2>
             </div>
-            <div
-              className="clarity-ring"
-              aria-label={`EraPrint clarity ${result.clarity}%`}
-            >
-              <strong>{Math.round(result.clarity)}%</strong>
-              <span>clarity</span>
-            </div>
           </div>
 
-          <aside className="result-explainer signal-builder-explainer">
-            <strong>HOW YOUR SIGNALS ARE BUILT</strong>
-            <p>
-              Your choices each leave small signals across different traits.
-              When several of your choices point in the same direction, that
-              trait moves farther from the middle.
-            </p>
-            <p>
-              A score near 50 is more balanced. Higher or lower scores show
-              which direction your choices consistently leaned.
-            </p>
-          </aside>
+          <details className="trait-glossary result-disclosure signal-builder-explainer">
+            <summary>HOW YOUR SIGNALS ARE BUILT</summary>
+            <div className="result-disclosure-copy">
+              <p>
+                Your choices each leave small signals across different traits.
+                When several of your choices point in the same direction, that
+                trait moves farther from the middle.
+              </p>
+            </div>
+          </details>
 
           <div className="dominant-grid">
             {dominantTraits.map((trait) => (
               <article key={trait.code} className="dominant-card">
-                <span>{trait.name}</span>
-                <strong>{Math.round(trait.score)}</strong>
+                <TraitScoreDisplay
+                  trait={trait}
+                  scores={[{ value: trait.score }]}
+                  showPoles={false}
+                />
                 <p>{traitDisplayDirection(trait.code, trait.score)}</p>
               </article>
             ))}
           </div>
 
-          <aside className="result-explainer clarity-explainer">
-            <strong>What clarity means</strong>
-            <p>{buildClarityExplanation(result)}</p>
-          </aside>
-
-          <div className="trait-list">
-            {PUBLIC_TRAITS.map((trait) => (
-              <TraitBar
-                key={trait.code}
-                label={trait.name}
-                value={result.traitScores[trait.code].score}
-              />
-            ))}
+          <div className="signal-subsection clarity-subsection">
+            <div className="section-heading compact clarity-heading">
+              <div>
+                <p className="eyebrow">CLARITY</p>
+                <h2>How clearly your pattern formed</h2>
+              </div>
+              <div
+                className="clarity-ring"
+                aria-label={`EraPrint clarity ${result.clarity}%`}
+              >
+                <strong>{Math.round(result.clarity)}%</strong>
+                <span>clarity</span>
+              </div>
+            </div>
+            <details className="trait-glossary result-disclosure clarity-explainer">
+              <summary>WHAT CLARITY MEANS</summary>
+              <div className="result-disclosure-copy">
+                <p>{buildClarityExplanation(result)}</p>
+              </div>
+            </details>
           </div>
 
-          <details className="trait-glossary">
-            <summary>WHAT EACH SIGNAL MEANS</summary>
-            <div className="trait-glossary-grid">
+          <div className="signal-subsection all-signals-subsection">
+            <div className="section-heading compact">
+              <div>
+                <p className="eyebrow">ALL 8 SIGNALS</p>
+                <h2>Your complete signal breakdown</h2>
+              </div>
+            </div>
+            <p className="circle-trait-scale-explain">
+              Around 50 is more balanced, farther from 50 shows a clearer lean.
+            </p>
+            <div className="circle-trait-list result-trait-list">
               {PUBLIC_TRAITS.map((trait) => (
-                <article key={trait.code}>
-                  <strong>{trait.name}</strong>
-                  <p>
-                    <span>Lower:</span> {trait.lowLabel}
-                  </p>
-                  <p>
-                    <span>Higher:</span> {trait.highLabel}
-                  </p>
-                </article>
+                <div className="trait-result-row" key={trait.code}>
+                  <TraitScoreDisplay
+                    trait={trait}
+                    scores={[{ value: result.traitScores[trait.code].score }]}
+                  />
+                </div>
               ))}
             </div>
-          </details>
+          </div>
         </section>
 
         <section className="result-section">
@@ -492,19 +487,14 @@ export function ResultDisplay({
             <header className="explore-heading">
               <p className="eyebrow">EXPLORE TOGETHER</p>
               <h2>See what happens when EraPrints meet.</h2>
-              <p>
-                Compare one-on-one or bring the whole group into the story.
-              </p>
+              <p>Compare one-on-one or bring the whole group into the story.</p>
             </header>
 
             <div className="explore-options">
               <article className="explore-option">
                 <p className="eyebrow">ERAMATCH</p>
                 <h3>Compare with one friend</h3>
-                <p>
-                  See where your profiles align, contrast, and connect.
-                </p>
-                {inviteUrl && <p className="match-invite-url">{inviteUrl}</p>}
+                <p>See where your profiles align, contrast, and connect.</p>
                 <div className="match-action-stack">
                   {backToMatchId && (
                     <Link
@@ -557,6 +547,14 @@ export function ResultDisplay({
                       href={`/circle/result/${backToCircleResultId}`}
                     >
                       ← Back to Circle Result
+                    </Link>
+                  )}
+                  {backToCircleLobbyId && !backToCircleResultId && (
+                    <Link
+                      className="secondary-button match-return-button"
+                      href={`/circle/${backToCircleLobbyId}?fromSnapshotId=${shareSource.snapshotId}`}
+                    >
+                      ← Back to Circle
                     </Link>
                   )}
                   <button

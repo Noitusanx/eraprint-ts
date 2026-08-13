@@ -28,7 +28,7 @@ No Google or email login is required. When Supabase is configured, the app uses 
 ### Living EraPrint
 
 - An owner can optionally refine their latest persisted EraPrint.
-- Each refinement round contains exactly 3 new adaptive questions.
+- Refinement continues through unused adaptive questions until the user finishes later or exhausts the catalog.
 - Previously answered questions are never selected again.
 - Results are calculated from all cumulative answers: `8 → 11 → 14 → 17 → ...`.
 - Every completed round creates a new immutable snapshot instead of overwriting the old one.

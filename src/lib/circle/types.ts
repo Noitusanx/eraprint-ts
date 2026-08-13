@@ -37,6 +37,7 @@ export interface CircleCalculation {
 
 export interface PublicCircleMember {
   snapshotId?: string;
+  displayName?: string;
   archetype: string;
   primaryEra: EraBlendItem;
   secondaryEra: EraBlendItem;
@@ -45,6 +46,7 @@ export interface PublicCircleMember {
 
 export interface PublicCircleLobby {
   circleId: string;
+  creatorMemberIndex?: number;
   status: "OPEN" | "FINALIZED" | "EXPIRED";
   circleVersion: typeof CIRCLE_VERSION;
   expiresAt: string;
@@ -57,11 +59,23 @@ export interface PublicCircleLobby {
 export interface CircleParticipantState {
   isOwner: boolean;
   isMember: boolean;
+  memberIndex: number | null;
   snapshotId: string | null;
+  displayName: string | null;
+}
+
+export interface CircleResultViewerState {
+  memberIndex: number | null;
 }
 
 export interface PublicCircleResult extends CircleCalculation {
   circleResultId: string;
-  members: Array<Required<PublicCircleMember>>;
+  creatorMemberIndex?: number;
+  members: Array<
+    PublicCircleMember & {
+      snapshotId: string;
+      hiddenEra: EraBlendItem;
+    }
+  >;
   createdAt: string;
 }

@@ -15,6 +15,7 @@ import {
   finalizeCircle,
   getCircleParticipantState,
   joinCircle,
+  setCircleMemberDisplayName,
 } from "@/lib/repositories/circle-repository";
 
 export function CircleLobbyClient({
@@ -35,6 +36,10 @@ export function CircleLobbyClient({
   const [finalizing, setFinalizing] = useState(false);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [displayName, setDisplayName] = useState("");
+  const [editingName, setEditingName] = useState(false);
+  const [savingName, setSavingName] = useState(false);
+  const [nameError, setNameError] = useState<string | null>(null);
 
   useEffect(() => {
     if (lobby.status === "FINALIZED" && lobby.resultId) {
@@ -62,7 +67,10 @@ export function CircleLobbyClient({
       return;
     }
     getCircleParticipantState(lobby.circleId)
-      .then(setParticipant)
+      .then((state) => {
+        setParticipant(state);
+        setDisplayName(state.displayName ?? "");
+      })
       .catch((caught) =>
         setError(
           caught instanceof Error
@@ -78,9 +86,14 @@ export function CircleLobbyClient({
     setJoining(true);
     setError(null);
     try {
-      await joinCircle(lobby.circleId, participant.snapshotId);
+      const memberCount = await joinCircle(lobby.circleId, participant.snapshotId);
       clearPendingSocialAction();
-      setParticipant({ ...participant, isMember: true });
+      setParticipant({
+        ...participant,
+        isMember: true,
+        memberIndex: memberCount,
+        displayName: null,
+      });
       router.refresh();
     } catch (caught) {
       setError(
@@ -113,12 +126,12 @@ export function CircleLobbyClient({
       try {
         await navigator.share({
           title: "Join my EraPrint Circle",
-          text: "Bring your EraPrint into our Circle.",
           url,
         });
         return;
       } catch (caught) {
-        if (caught instanceof DOMException && caught.name === "AbortError") return;
+        if (caught instanceof DOMException && caught.name === "AbortError")
+          return;
       }
     }
     await navigator.clipboard.writeText(url);
@@ -126,10 +139,37 @@ export function CircleLobbyClient({
     window.setTimeout(() => setCopied(false), 1500);
   };
 
+  const saveDisplayName = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setSavingName(true);
+    setNameError(null);
+    try {
+      const savedName = await setCircleMemberDisplayName(
+        lobby.circleId,
+        displayName,
+      );
+      setDisplayName(savedName ?? "");
+      setParticipant((current) =>
+        current ? { ...current, displayName: savedName } : current,
+      );
+      setEditingName(false);
+      router.refresh();
+    } catch (caught) {
+      setNameError(
+        caught instanceof Error ? caught.message : "Unable to save your name.",
+      );
+    } finally {
+      setSavingName(false);
+    }
+  };
+
   const startEraPrint = () =>
     setPendingSocialAction({ type: "circle", circleId: lobby.circleId });
   const full = lobby.memberCount >= lobby.maxMembers;
   const ready = lobby.memberCount >= 3;
+  const isOwner = participant?.isOwner === true;
+  const isJoinedMember = participant?.isMember === true && !isOwner;
+  const mySnapshotId = backSnapshotId ?? participant?.snapshotId;
 
   return (
     <main className="result-shell circle-lobby-shell">
@@ -151,9 +191,9 @@ export function CircleLobbyClient({
           </strong>
           <p>
             {full
-              ? "Your Circle is full and ready to reveal."
+              ? `${isOwner ? "Your" : "This"} Circle is full and ready to reveal.`
               : ready
-                ? "Your Circle is ready to reveal."
+                ? `${isOwner ? "Your" : "This"} Circle is ready to reveal.`
                 : `${3 - lobby.memberCount} more ${3 - lobby.memberCount === 1 ? "person" : "people"} needed to reveal the result.`}
           </p>
         </div>
@@ -166,28 +206,110 @@ export function CircleLobbyClient({
             </div>
           </div>
           <div className="circle-member-grid">
-            {lobby.members.map((member, index) => (
-              <article key={`${member.archetype}-${index}`}>
-                <span>PROFILE {index + 1}</span>
-                <strong>{member.archetype}</strong>
-                <p>
-                  {member.primaryEra.name} × {member.secondaryEra.name}
-                </p>
-              </article>
-            ))}
+            {lobby.members.map((member, index) => {
+              const memberIndex = index + 1;
+              const isViewer = participant?.memberIndex === memberIndex;
+              const isCreator =
+                (lobby.creatorMemberIndex ?? 1) === memberIndex;
+              const badge = isViewer
+                ? isCreator
+                  ? "YOU · CREATOR"
+                  : "YOU"
+                : isCreator
+                  ? "CREATOR"
+                  : null;
+              const shownName = isViewer
+                ? participant?.displayName
+                : member.displayName;
+
+              return (
+                <article
+                  className={isViewer ? "circle-member-is-viewer" : undefined}
+                  key={`${member.archetype}-${index}`}
+                >
+                  <div className="circle-member-label">
+                    <span>
+                      {isViewer && editingName
+                        ? "YOUR NAME"
+                        : shownName || `PROFILE ${memberIndex}`}
+                    </span>
+                    {badge && <b>{badge}</b>}
+                  </div>
+
+                  {isViewer && editingName && (
+                    <form
+                      className="circle-name-editor"
+                      onSubmit={saveDisplayName}
+                    >
+                      <input
+                        aria-label="Your name in this Circle"
+                        autoFocus
+                        maxLength={32}
+                        onChange={(event) => setDisplayName(event.target.value)}
+                        placeholder={`Profile ${memberIndex}`}
+                        type="text"
+                        value={displayName}
+                      />
+                      <div className="circle-name-editor-actions">
+                        <button disabled={savingName} type="submit">
+                          {savingName ? "Saving…" : "Save"}
+                        </button>
+                        <button
+                          disabled={savingName}
+                          onClick={() => {
+                            setDisplayName(participant.displayName ?? "");
+                            setNameError(null);
+                            setEditingName(false);
+                          }}
+                          type="button"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                      {nameError && (
+                        <p className="circle-name-error" role="alert">
+                          {nameError}
+                        </p>
+                      )}
+                    </form>
+                  )}
+
+                  <strong>{member.archetype}</strong>
+                  <p>
+                    {member.primaryEra.name} × {member.secondaryEra.name}
+                  </p>
+
+                  {isViewer && !editingName && lobby.status === "OPEN" && (
+                    <button
+                      className="circle-name-action"
+                      onClick={() => {
+                        setDisplayName(participant.displayName ?? "");
+                        setNameError(null);
+                        setEditingName(true);
+                      }}
+                      type="button"
+                    >
+                      {participant.displayName ? "Edit name" : "Add name"}
+                    </button>
+                  )}
+                </article>
+              );
+            })}
           </div>
         </section>
 
         <section className="circle-lobby-actions">
           {lobby.status === "EXPIRED" ? (
             <p role="alert">This Circle invite has expired.</p>
-          ) : loading || joining ? (
+          ) : joining ? (
+            <p aria-live="polite">Joining Circle…</p>
+          ) : loading ? (
             <p aria-live="polite">
-              {joining ? "Joining Circle…" : "Checking your EraPrint…"}
+              Checking your EraPrint…
             </p>
           ) : (
             <>
-              {participant?.isOwner && ready && (
+              {isOwner && ready && (
                 <button
                   className="primary-button"
                   type="button"
@@ -197,13 +319,17 @@ export function CircleLobbyClient({
                   {finalizing ? "Revealing…" : "Reveal Circle Result"}
                 </button>
               )}
-              {participant?.isOwner && !full && (
+              {isOwner && !full && (
                 <button
                   className={ready ? "secondary-button" : "primary-button"}
                   type="button"
                   onClick={inviteFriends}
                 >
-                  {copied ? "Invite link copied" : ready ? "Invite more" : "Invite friends"}
+                  {copied
+                    ? "Invite link copied"
+                    : ready
+                      ? "Invite more"
+                      : "Invite friends"}
                 </button>
               )}
               {!participant?.isMember && participant?.snapshotId && !full && (
@@ -223,6 +349,12 @@ export function CircleLobbyClient({
               {!participant?.isMember && full && (
                 <p>This Circle already has 10 members.</p>
               )}
+              {isJoinedMember && (
+                <div className="circle-joined-state">
+                  <strong>You&apos;re in the Circle.</strong>
+                  <p>Waiting for the creator to reveal the result.</p>
+                </div>
+              )}
             </>
           )}
           {error && (
@@ -230,10 +362,10 @@ export function CircleLobbyClient({
               {error}
             </p>
           )}
-          {backSnapshotId && (
+          {participant?.isMember && mySnapshotId && (
             <Link
-              className="secondary-button circle-back-action"
-              href={`/result/${backSnapshotId}`}
+              className="circle-back-action"
+              href={`/result/${mySnapshotId}?fromCircleLobby=${lobby.circleId}`}
             >
               ← Back to my EraPrint
             </Link>

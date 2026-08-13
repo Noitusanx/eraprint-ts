@@ -1,6 +1,6 @@
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import type { PublicQuestion } from "@/lib/data/public-catalog";
-import type { Answer } from "@/lib/scoring/types";
+import type { RefinementMode } from "@/lib/living/refinement-mode";
 
 async function authenticatedFetch(path: string, init?: RequestInit) {
   const supabase = getSupabaseBrowserClient();
@@ -20,9 +20,16 @@ async function authenticatedFetch(path: string, init?: RequestInit) {
 export type LivingState = {
   owned: boolean;
   isLatest: boolean;
+  latestSnapshotId: string | null;
   answerCount: number;
   remainingCount: number;
   canRefine: boolean;
+  activeRefinement: null | {
+    sessionId: string;
+    mode: RefinementMode;
+    answeredCount: number;
+    remainingCount: number;
+  };
   previous: null | {
     id: string;
     primary_era_code: string;
@@ -43,20 +50,48 @@ export async function fetchLivingState(snapshotId: string): Promise<LivingState>
   return readJson(await authenticatedFetch(`/api/refine/${snapshotId}/state`));
 }
 
-export async function fetchRefinementQuestion(snapshotId: string, answers: Answer[]) {
-  return readJson<{ question: PublicQuestion | null }>(await authenticatedFetch(
-    `/api/refine/${snapshotId}/next`,
-    { method: "POST", body: JSON.stringify({ answers }) },
+export type RefinementSessionState = {
+  sessionId: string;
+  mode: RefinementMode;
+  sessionAnswerCount: number;
+  baseAnswerCount: number;
+  totalQuestionCount: number;
+  targetNewAnswers: number;
+  shouldFinalize: boolean;
+  question: PublicQuestion | null;
+};
+
+export async function startOrResumeRefinement(snapshotId: string) {
+  return readJson<RefinementSessionState>(await authenticatedFetch(
+    `/api/refine/${snapshotId}/session`,
+    { method: "POST", body: JSON.stringify({}) },
   ));
+}
+
+export async function saveRefinementAnswer(
+  snapshotId: string,
+  sessionId: string,
+  questionId: string,
+  choiceId: string,
+) {
+  return readJson<{
+    sessionAnswerCount: number;
+    cumulativeAnswerCount: number;
+    remainingCount: number;
+    shouldFinalize: boolean;
+    question: PublicQuestion | null;
+  }>(await authenticatedFetch(`/api/refine/${snapshotId}/answer`, {
+    method: "POST",
+    body: JSON.stringify({ sessionId, questionId, choiceId }),
+  }));
 }
 
 export async function completeRefinement(
   snapshotId: string,
-  answers: Answer[],
-  clientRequestId: string,
+  sessionId: string,
 ) {
   return readJson<{ persisted: true; snapshotId: string }>(await authenticatedFetch(
     `/api/refine/${snapshotId}/complete`,
-    { method: "POST", body: JSON.stringify({ answers, clientRequestId }) },
+    { method: "POST", body: JSON.stringify({ sessionId }) },
   ));
 }

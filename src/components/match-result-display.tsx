@@ -3,10 +3,12 @@
 import Link from "next/link";
 import { useState } from "react";
 import { PUBLIC_TRAITS } from "@/lib/data/public-catalog";
+import { TraitScoreDisplay } from "./trait-score-display";
 import {
   buildEraMatchSummary,
   matchTraitName,
 } from "@/lib/match/era-match-copy";
+import { EraDynamicSection } from "@/components/era-dynamic-section";
 import type { PublicEraMatchResult } from "@/lib/match/types";
 import { UUID_PATTERN } from "@/lib/repositories/era-match-public-repository";
 
@@ -104,7 +106,9 @@ export function MatchResultDisplay({
           </article>
         </section>
 
-        <section className="result-section">
+        <EraDynamicSection result={result} />
+
+        <section className="result-section match-profile-section">
           <div className="profile-pair">
             <article>
               <span>PROFILE A</span>
@@ -150,21 +154,20 @@ export function MatchResultDisplay({
               const scoreA = result.profileA.traitScores[trait.code];
               const scoreB = result.profileB.traitScores[trait.code];
               return (
-                <div className="match-trait-row" key={trait.code}>
-                  <span>{trait.name}</span>
-                  <strong>{Math.round(scoreA)}</strong>
-                  <div>
-                    <i style={{ width: `${scoreA}%` }} />
-                    <i style={{ width: `${scoreB}%` }} />
-                  </div>
-                  <strong>{Math.round(scoreB)}</strong>
-                </div>
+                <TraitScoreDisplay
+                  key={trait.code}
+                  trait={trait}
+                  scores={[
+                    { label: "Profile A", value: scoreA, tone: "profile-a" },
+                    { label: "Profile B", value: scoreB, tone: "profile-b" },
+                  ]}
+                />
               );
             })}
           </div>
         </section>
 
-        <section className="result-section">
+        <section className="result-section match-era-connection-section">
           <div className="section-heading compact">
             <div>
               <p className="eyebrow">ERA BLEND CONNECTION</p>
@@ -173,11 +176,10 @@ export function MatchResultDisplay({
           </div>
           <div className="shared-era-card">
             <strong>{result.sharedEra.name}</strong>
-            <p>
-              Both profiles carry this era in their blend:{" "}
-              {result.sharedEra.percentageA.toFixed(1)}% and{" "}
-              {result.sharedEra.percentageB.toFixed(1)}%.
-            </p>
+            <div className="shared-era-evidence">
+              <span>Profile A <strong>{result.sharedEra.percentageA.toFixed(1)}%</strong></span>
+              <span>Profile B <strong>{result.sharedEra.percentageB.toFixed(1)}%</strong></span>
+            </div>
           </div>
           <p className="fine-print">
             EraMatch measures entertainment-profile similarity, not relationship

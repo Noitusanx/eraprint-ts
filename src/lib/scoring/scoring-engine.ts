@@ -5,7 +5,6 @@ export const PRIOR_WEIGHT = 3;
 export const ERA_TEMPERATURE = 0.008;
 export const INITIAL_DECISIONS = 8;
 export const ANCHOR_DECISIONS = ANCHOR_QUESTION_IDS.length;
-export const REFINEMENT_DECISIONS = 3;
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 const round1 = (value: number) => Math.round(value * 10) / 10;
@@ -332,6 +331,7 @@ export function validateInitialGameSequence(answers: Answer[]): string[] {
 export function validateLivingEraPrintAnswers(
   baseAnswers: Answer[],
   refinementAnswers: Answer[],
+  maximumNewAnswers = Math.max(0, QUESTIONS.length - baseAnswers.length),
 ): string[] {
   const errors: string[] = [];
 
@@ -339,8 +339,8 @@ export function validateLivingEraPrintAnswers(
     errors.push("Living EraPrint requires a completed initial EraPrint.");
     return errors;
   }
-  if (refinementAnswers.length > REFINEMENT_DECISIONS) {
-    errors.push(`A refinement session accepts at most ${REFINEMENT_DECISIONS} new answers.`);
+  if (refinementAnswers.length > maximumNewAnswers) {
+    errors.push(`This refinement session accepts at most ${maximumNewAnswers} new answers.`);
     return errors;
   }
 

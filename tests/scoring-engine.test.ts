@@ -3,13 +3,16 @@ import {
   calculateEraBlend,
   calculateEraPrint,
   calculateTraitScores,
+  INITIAL_DECISIONS,
   rankAdaptiveQuestions,
   selectNextAdaptiveQuestion,
   validateCatalog,
   validateInitialGameSequence,
   validateLivingEraPrintAnswers,
 } from "../src/lib/scoring/scoring-engine";
+import { buildRefinedEraPrint, refinementTarget } from "../src/lib/living/refinement-mode";
 import type { Answer } from "../src/lib/scoring/types";
+import { buildClarityExplanation, traitDisplayDirection } from "../src/lib/scoring/result-copy";
 
 const romanticSocial: Answer[] = [
   { questionId: "Q01", choiceId: "Q01_A" },
@@ -45,6 +48,23 @@ const guardedAssertive: Answer[] = [
 ];
 
 describe("EraPrint scoring engine", () => {
+  it("describes low, balanced, and high trait scores in the correct direction", () => {
+    expect(traitDisplayDirection("ROM", 30)).toContain("realistic");
+    expect(traitDisplayDirection("ROM", 50)).toContain("balanced between");
+    expect(traitDisplayDirection("ROM", 70)).toContain("idealistic");
+  });
+
+  it("explains clarity as the overall emerging pattern without trait-count language", () => {
+    const explanation = buildClarityExplanation(calculateEraPrint(guardedAssertive));
+    expect(explanation).toContain("your answers came together to form your EraPrint");
+    expect(explanation).toContain("It is not an accuracy score.");
+    expect(explanation).toMatch(/At \d+%, your answers formed/);
+    expect(explanation).not.toContain("same direction");
+    expect(explanation).not.toMatch(/across \d+ of 8 traits/);
+    expect(explanation).not.toContain("confidence");
+    expect(explanation).not.toContain("correctness");
+  });
+
   it("has a valid V1 catalog", () => {
     expect(validateCatalog()).toEqual([]);
   });
@@ -136,27 +156,28 @@ describe("EraPrint scoring engine", () => {
   });
 
   it("does not accept an initial result after only five anchors", () => {
+    expect(INITIAL_DECISIONS).toBe(8);
     expect(validateInitialGameSequence(guardedAssertive.slice(0, 5))).toEqual([]);
     expect(guardedAssertive.slice(0, 5)).toHaveLength(5);
     // Initial selection validation permits the in-progress state; result and
     // persistence boundaries remain responsible for requiring exactly eight.
   });
 
-  it("selects exactly three deterministic, unused refinement questions", () => {
+  it("selects deterministic, unused refinement questions beyond three answers", () => {
     const initial: Answer[] = guardedAssertive.slice(0, 5);
     while (initial.length < 8) {
       const next = selectNextAdaptiveQuestion(initial)!;
       initial.push({ questionId: next.id, choiceId: next.choices[0].id });
     }
     const refinement: Answer[] = [];
-    while (refinement.length < 3) {
+    while (refinement.length < 5) {
       const cumulative = [...initial, ...refinement];
       const next = selectNextAdaptiveQuestion(cumulative)!;
       expect(new Set(cumulative.map((answer) => answer.questionId)).has(next.id)).toBe(false);
       expect(selectNextAdaptiveQuestion(cumulative)?.id).toBe(next.id);
       refinement.push({ questionId: next.id, choiceId: next.choices[0].id });
     }
-    expect(refinement).toHaveLength(3);
+    expect(refinement).toHaveLength(5);
     expect(validateLivingEraPrintAnswers(initial, refinement)).toEqual([]);
     expect(calculateEraPrint([...initial, ...refinement])).not.toEqual(calculateEraPrint(initial));
   });
@@ -180,5 +201,61 @@ describe("EraPrint scoring engine", () => {
       allAnswers.push({ questionId: question.id, choiceId: question.choices[0].id });
     }
     expect(selectNextAdaptiveQuestion(allAnswers)).toBeNull();
+  });
+
+  it("continues answer-all refinement past three choices to catalog exhaustion", () => {
+    const initial: Answer[] = guardedAssertive.slice(0, 5);
+    while (initial.length < 8) {
+      const next = selectNextAdaptiveQuestion(initial)!;
+      initial.push({ questionId: next.id, choiceId: next.choices[0].id });
+    }
+
+    const refinement: Answer[] = [];
+    while (true) {
+      const next = selectNextAdaptiveQuestion([...initial, ...refinement]);
+      if (!next) break;
+      refinement.push({ questionId: next.id, choiceId: next.choices[0].id });
+    }
+
+    expect(refinement.length).toBeGreaterThan(3);
+    expect(initial.length + refinement.length).toBe(30);
+    expect(new Set([...initial, ...refinement].map((answer) => answer.questionId)).size).toBe(30);
+    expect(validateLivingEraPrintAnswers(initial, refinement, refinement.length)).toEqual([]);
+    expect(selectNextAdaptiveQuestion([...initial, ...refinement])).toBeNull();
+  });
+
+  it("resumes a long refinement from persisted answers deterministically", () => {
+    const initial: Answer[] = guardedAssertive.slice(0, 5);
+    while (initial.length < 8) {
+      const next = selectNextAdaptiveQuestion(initial)!;
+      initial.push({ questionId: next.id, choiceId: next.choices[0].id });
+    }
+    const persisted: Answer[] = [];
+    for (let index = 0; index < 7; index += 1) {
+      const next = selectNextAdaptiveQuestion([...initial, ...persisted])!;
+      persisted.push({ questionId: next.id, choiceId: next.choices[0].id });
+    }
+
+    const beforeRefresh = selectNextAdaptiveQuestion([...initial, ...persisted]);
+    const afterRefresh = selectNextAdaptiveQuestion([...initial, ...persisted.map((answer) => ({ ...answer }))]);
+    expect(afterRefresh?.id).toBe(beforeRefresh?.id);
+    expect(initial).toHaveLength(8);
+  });
+
+  it("targets every unused question in the single continuous refinement", () => {
+    expect(refinementTarget(8)).toBe(22);
+    expect(refinementTarget(28)).toBe(2);
+    expect(refinementTarget(30)).toBe(0);
+  });
+
+  it("builds a new cumulative result without changing the previous answer history", () => {
+    const initial = guardedAssertive.slice(0, 8).map((answer) => ({ ...answer }));
+    const previousHistory = initial.map((answer) => ({ ...answer }));
+    const next = selectNextAdaptiveQuestion(initial)!;
+    const refined = buildRefinedEraPrint(initial, [{ questionId: next.id, choiceId: next.choices[0].id }]);
+
+    expect(initial).toEqual(previousHistory);
+    expect(refined.cumulativeAnswers).toHaveLength(9);
+    expect(refined.result).toEqual(calculateEraPrint(refined.cumulativeAnswers));
   });
 });

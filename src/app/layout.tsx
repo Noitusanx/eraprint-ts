@@ -2,9 +2,9 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "EraPrint | Discover your EraPrint",
+  title: "EraPrint | Find Your EraPrint",
   description:
-    "Make eight quick choices and see your Era blend, strongest signals, and the Eras that fit you best.",
+    "Make eight choices, get your EraPrint, and compare it with friends.",
 };
 
 export const viewport: Viewport = {

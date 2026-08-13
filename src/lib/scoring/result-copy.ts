@@ -53,23 +53,31 @@ export function getDominantTraits(result: EraPrintResult, limit = 3) {
 }
 
 export function traitDisplayDirection(code: TraitCode, score: number): string {
-  const trait = PUBLIC_TRAITS.find((item) => item.code === code);
-  if (!trait) return "";
-  return score >= 50 ? trait.highLabel : trait.lowLabel;
+  const directions: Record<TraitCode, { low: string; high: string }> = {
+    ROM: { low: "Leans more realistic about romance.", high: "Leans idealistic about romance." },
+    EMO: { low: "Leans emotionally steady.", high: "Leans emotionally intense." },
+    NOS: { low: "Leans future-focused.", high: "Leans nostalgic." },
+    AUT: { low: "Leans more accommodating.", high: "Leans independent and self-directed." },
+    REF: { low: "Leans action-first and outward-focused.", high: "Leans reflective and inward-looking." },
+    ESC: { low: "Leans concrete and literal.", high: "Leans imaginative." },
+    SOC: { low: "Leans private and low-key.", high: "Leans socially expressive." },
+    GRD: { low: "Leans open and accessible.", high: "Leans private and protective." },
+  };
+  if (score >= 45 && score <= 55) {
+    return "More balanced between the two.";
+  }
+  return score > 55 ? directions[code].high : directions[code].low;
 }
 
 export function buildClarityExplanation(result: EraPrintResult): string {
-  const measuredTraits = Object.values(result.traitScores).filter(
-    (trait) => trait.evidenceCount > 0,
-  ).length;
-  const band =
+  const valueExplanation =
     result.clarity >= 70
-      ? "a clear"
+      ? "your answers formed a clear profile, though a few signals are still closer to the middle."
       : result.clarity >= 50
-        ? "a fairly clear"
-        : "an early";
+        ? "your answers formed a fairly clear profile, while some signals are still closer to the middle."
+        : "your profile is starting to take shape, but several signals are still close to the middle.";
 
-  return `Clarity shows how strongly your choices point in the same direction. It is not an accuracy score. At ${Math.round(result.clarity)}%, your answers formed ${band} pattern across ${measuredTraits} of 8 traits.`;
+  return `Clarity shows how clearly your answers came together to form your EraPrint. It is not an accuracy score. At ${Math.round(result.clarity)}%, ${valueExplanation}`;
 }
 
 export const ERA_BLEND_EXPLANATION =

@@ -1,4 +1,4 @@
-import { PUBLIC_TRAITS } from "@/lib/data/public-catalog";
+import { PUBLIC_TRAITS } from "../data/public-catalog";
 import type { PublicEraMatchResult } from "./types";
 
 export function matchTraitName(code: string): string {
@@ -6,20 +6,17 @@ export function matchTraitName(code: string): string {
 }
 
 export function buildEraMatchSummary(result: PublicEraMatchResult): string {
-  const first = matchTraitName(result.mostInSync[0].code).toLowerCase();
-  const contrast = matchTraitName(result.biggestContrast.code).toLowerCase();
-
   if (result.matchScore >= 85) {
-    return `You have a lot in common, especially in ${first}. Your biggest difference is ${contrast}.`;
+    return "Your EraPrints share a very strong overall pattern, with only a few differences.";
   }
 
   if (result.matchScore >= 70) {
-    return `You share some strong similarities, especially in ${first}. You differ most in ${contrast}.`;
+    return "You share a strong overall pattern, with a few meaningful differences.";
   }
 
   if (result.matchScore >= 50) {
-    return `You have some things in common, especially in ${first}. Your clearest difference is ${contrast}.`;
+    return "Your EraPrints share part of the same pattern, alongside some clear differences.";
   }
 
-  return `Your EraPrints are quite different. You are closest in ${first}, and furthest apart in ${contrast}.`;
+  return "Your EraPrints follow different overall patterns, with a few points of overlap.";
 }

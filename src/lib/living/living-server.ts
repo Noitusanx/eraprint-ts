@@ -41,5 +41,6 @@ export async function getOwnedSnapshotContext(
     snapshot: snapshotResponse.data,
     answers,
     isLatest: latestResponse.data === snapshotId,
+    latestSnapshotId: latestResponse.data as string | null,
   };
 }

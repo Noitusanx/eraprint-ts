@@ -5,17 +5,24 @@ import {
   fetchPublicMatchResult,
   UUID_PATTERN,
 } from "@/lib/repositories/era-match-public-repository";
-import { fetchPublicCircleResult } from "@/lib/repositories/circle-public-repository";
+import {
+  fetchPublicCircle,
+  fetchPublicCircleResult,
+} from "@/lib/repositories/circle-public-repository";
 
 export default async function PublicResultPage({
   params,
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ fromMatch?: string; fromCircle?: string }>;
+  searchParams: Promise<{
+    fromMatch?: string;
+    fromCircle?: string;
+    fromCircleLobby?: string;
+  }>;
 }) {
   const { id: snapshotId } = await params;
-  const { fromMatch, fromCircle } = await searchParams;
+  const { fromMatch, fromCircle, fromCircleLobby } = await searchParams;
   const result = await fetchSnapshotAsResult(snapshotId);
 
   if (!result) {
@@ -27,6 +34,14 @@ export default async function PublicResultPage({
     const circle = await fetchPublicCircleResult(fromCircle);
     if (circle?.members.some((member) => member.snapshotId === snapshotId)) {
       backToCircleResultId = circle.circleResultId;
+    }
+  }
+
+  let backToCircleLobbyId: string | undefined;
+  if (fromCircleLobby && UUID_PATTERN.test(fromCircleLobby)) {
+    const circle = await fetchPublicCircle(fromCircleLobby);
+    if (circle) {
+      backToCircleLobbyId = circle.circleId;
     }
   }
 
@@ -47,6 +62,7 @@ export default async function PublicResultPage({
       shareSource={{ type: "snapshot", snapshotId }}
       backToMatchId={backToMatchId}
       backToCircleResultId={backToCircleResultId}
+      backToCircleLobbyId={backToCircleLobbyId}
     />
   );
 }

@@ -1,5 +1,8 @@
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
-import type { CircleParticipantState } from "@/lib/circle/types";
+import type {
+  CircleParticipantState,
+  CircleResultViewerState,
+} from "@/lib/circle/types";
 
 async function accessToken(): Promise<string> {
   const supabase = getSupabaseBrowserClient();
@@ -32,6 +35,36 @@ export async function createCircle(snapshotId: string): Promise<string> {
 
 export async function getCircleParticipantState(circleId: string): Promise<CircleParticipantState> {
   return request<CircleParticipantState>(`/api/circle/${circleId}/participant`);
+}
+
+export async function setCircleMemberDisplayName(
+  circleId: string,
+  displayName: string,
+): Promise<string | null> {
+  return (
+    await request<{ displayName: string | null }>(
+      `/api/circle/${circleId}/participant`,
+      {
+        method: "PATCH",
+        body: JSON.stringify({ displayName }),
+      },
+    )
+  ).displayName;
+}
+
+export async function getCircleResultViewerState(
+  resultId: string,
+): Promise<CircleResultViewerState> {
+  const supabase = getSupabaseBrowserClient();
+  if (!supabase) return { memberIndex: null };
+  const session = (await supabase.auth.getSession()).data.session;
+  if (!session?.access_token) return { memberIndex: null };
+
+  const response = await fetch(`/api/circle/result/${resultId}/viewer`, {
+    headers: { Authorization: `Bearer ${session.access_token}` },
+  });
+  if (!response.ok) return { memberIndex: null };
+  return (await response.json()) as CircleResultViewerState;
 }
 
 export async function joinCircle(circleId: string, snapshotId: string): Promise<number> {
