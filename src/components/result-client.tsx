@@ -66,7 +66,7 @@ function ResultLoading() {
           <h1>Turning your choices into your EraPrint.</h1>
 
           <p className="result-processing-copy">
-            Give us a moment—we&apos;re putting the pieces together.
+            Give us a moment. we&apos;re putting the pieces together.
           </p>
 
           <div className="result-processing-track" aria-hidden="true">
