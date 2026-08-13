@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import {
   calculateEraPrint,
+  INITIAL_DECISIONS,
   validateInitialGameSequence,
 } from "@/lib/scoring/scoring-engine";
 import type { Answer } from "@/lib/scoring/types";
@@ -33,9 +34,9 @@ export async function POST(request: Request) {
     const answers = body.answers ?? [];
     const clientRequestId = body.clientRequestId;
 
-    if (!clientRequestId || !Array.isArray(answers) || answers.length !== 8) {
+    if (!clientRequestId || !Array.isArray(answers) || answers.length !== INITIAL_DECISIONS) {
       return NextResponse.json(
-        { error: "Persistence requires a request id and exactly 8 answers." },
+        { error: `Persistence requires a request id and exactly ${INITIAL_DECISIONS} answers.` },
         { status: 400 },
       );
     }

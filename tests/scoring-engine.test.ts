@@ -10,7 +10,8 @@ import {
   validateInitialGameSequence,
   validateLivingEraPrintAnswers,
 } from "../src/lib/scoring/scoring-engine";
-import { buildRefinedEraPrint, refinementTarget } from "../src/lib/living/refinement-mode";
+import { buildRefinedEraPrint } from "../src/lib/living/refinement-result";
+import { buildRefinementProgress } from "../src/lib/living/refinement-session";
 import type { Answer } from "../src/lib/scoring/types";
 import { buildClarityExplanation, traitDisplayDirection } from "../src/lib/scoring/result-copy";
 
@@ -129,7 +130,7 @@ describe("EraPrint scoring engine", () => {
   it("validates the deterministic initial adaptive sequence", () => {
     const answers: Answer[] = guardedAssertive.slice(0, 5);
 
-    while (answers.length < 8) {
+    while (answers.length < INITIAL_DECISIONS) {
       const next = selectNextAdaptiveQuestion(answers);
       expect(next).not.toBeNull();
       answers.push({
@@ -156,16 +157,16 @@ describe("EraPrint scoring engine", () => {
   });
 
   it("does not accept an initial result after only five anchors", () => {
-    expect(INITIAL_DECISIONS).toBe(8);
+    expect(INITIAL_DECISIONS).toBe(13);
     expect(validateInitialGameSequence(guardedAssertive.slice(0, 5))).toEqual([]);
     expect(guardedAssertive.slice(0, 5)).toHaveLength(5);
     // Initial selection validation permits the in-progress state; result and
-    // persistence boundaries remain responsible for requiring exactly eight.
+    // persistence boundaries remain responsible for requiring exactly 13.
   });
 
   it("selects deterministic, unused refinement questions beyond three answers", () => {
     const initial: Answer[] = guardedAssertive.slice(0, 5);
-    while (initial.length < 8) {
+    while (initial.length < INITIAL_DECISIONS) {
       const next = selectNextAdaptiveQuestion(initial)!;
       initial.push({ questionId: next.id, choiceId: next.choices[0].id });
     }
@@ -184,7 +185,7 @@ describe("EraPrint scoring engine", () => {
 
   it("rejects repeated or manipulated Living EraPrint answers", () => {
     const initial: Answer[] = guardedAssertive.slice(0, 5);
-    while (initial.length < 8) {
+    while (initial.length < INITIAL_DECISIONS) {
       const next = selectNextAdaptiveQuestion(initial)!;
       initial.push({ questionId: next.id, choiceId: next.choices[0].id });
     }
@@ -203,9 +204,9 @@ describe("EraPrint scoring engine", () => {
     expect(selectNextAdaptiveQuestion(allAnswers)).toBeNull();
   });
 
-  it("continues answer-all refinement past three choices to catalog exhaustion", () => {
+  it("continues flexible refinement past three choices to catalog exhaustion", () => {
     const initial: Answer[] = guardedAssertive.slice(0, 5);
-    while (initial.length < 8) {
+    while (initial.length < INITIAL_DECISIONS) {
       const next = selectNextAdaptiveQuestion(initial)!;
       initial.push({ questionId: next.id, choiceId: next.choices[0].id });
     }
@@ -224,9 +225,29 @@ describe("EraPrint scoring engine", () => {
     expect(selectNextAdaptiveQuestion([...initial, ...refinement])).toBeNull();
   });
 
+  it("starts the single refinement contract from an owned initial result without a mode", () => {
+    const initial: Answer[] = guardedAssertive.slice(0, 5);
+    while (initial.length < INITIAL_DECISIONS) {
+      const next = selectNextAdaptiveQuestion(initial)!;
+      initial.push({ questionId: next.id, choiceId: next.choices[0].id });
+    }
+
+    const progress = buildRefinementProgress(initial, []);
+    expect(progress).toMatchObject({
+      errors: [],
+      sessionAnswerCount: 0,
+      cumulativeAnswerCount: 13,
+      remainingCount: 17,
+      catalogExhausted: false,
+    });
+    expect(progress.nextQuestion).not.toBeNull();
+    expect(progress).not.toHaveProperty("mode");
+    expect(progress).not.toHaveProperty("targetNewAnswers");
+  });
+
   it("resumes a long refinement from persisted answers deterministically", () => {
     const initial: Answer[] = guardedAssertive.slice(0, 5);
-    while (initial.length < 8) {
+    while (initial.length < INITIAL_DECISIONS) {
       const next = selectNextAdaptiveQuestion(initial)!;
       initial.push({ questionId: next.id, choiceId: next.choices[0].id });
     }
@@ -239,23 +260,44 @@ describe("EraPrint scoring engine", () => {
     const beforeRefresh = selectNextAdaptiveQuestion([...initial, ...persisted]);
     const afterRefresh = selectNextAdaptiveQuestion([...initial, ...persisted.map((answer) => ({ ...answer }))]);
     expect(afterRefresh?.id).toBe(beforeRefresh?.id);
-    expect(initial).toHaveLength(8);
+    expect(buildRefinementProgress(initial, persisted).nextQuestion?.id).toBe(beforeRefresh?.id);
+    expect(buildRefinementProgress(initial, persisted).sessionAnswerCount).toBe(7);
+    expect(initial).toHaveLength(13);
   });
 
-  it("targets every unused question in the single continuous refinement", () => {
-    expect(refinementTarget(8)).toBe(22);
-    expect(refinementTarget(28)).toBe(2);
-    expect(refinementTarget(30)).toBe(0);
+  it("reports catalog exhaustion without repeating a previously answered question", () => {
+    const initial: Answer[] = guardedAssertive.slice(0, 5);
+    while (initial.length < INITIAL_DECISIONS) {
+      const next = selectNextAdaptiveQuestion(initial)!;
+      initial.push({ questionId: next.id, choiceId: next.choices[0].id });
+    }
+    const refinement: Answer[] = [];
+    while (true) {
+      const next = selectNextAdaptiveQuestion([...initial, ...refinement]);
+      if (!next) break;
+      refinement.push({ questionId: next.id, choiceId: next.choices[0].id });
+    }
+
+    const progress = buildRefinementProgress(initial, refinement);
+    expect(progress.errors).toEqual([]);
+    expect(progress.catalogExhausted).toBe(true);
+    expect(progress.remainingCount).toBe(0);
+    expect(progress.nextQuestion).toBeNull();
+    expect(new Set([...initial, ...refinement].map((answer) => answer.questionId)).size).toBe(30);
   });
 
   it("builds a new cumulative result without changing the previous answer history", () => {
-    const initial = guardedAssertive.slice(0, 8).map((answer) => ({ ...answer }));
+    const initial: Answer[] = guardedAssertive.map((answer) => ({ ...answer }));
+    while (initial.length < INITIAL_DECISIONS) {
+      const adaptive = selectNextAdaptiveQuestion(initial)!;
+      initial.push({ questionId: adaptive.id, choiceId: adaptive.choices[0].id });
+    }
     const previousHistory = initial.map((answer) => ({ ...answer }));
     const next = selectNextAdaptiveQuestion(initial)!;
     const refined = buildRefinedEraPrint(initial, [{ questionId: next.id, choiceId: next.choices[0].id }]);
 
     expect(initial).toEqual(previousHistory);
-    expect(refined.cumulativeAnswers).toHaveLength(9);
+    expect(refined.cumulativeAnswers).toHaveLength(14);
     expect(refined.result).toEqual(calculateEraPrint(refined.cumulativeAnswers));
   });
 });

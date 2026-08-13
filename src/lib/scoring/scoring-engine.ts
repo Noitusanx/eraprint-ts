@@ -3,8 +3,9 @@ import { TRAIT_CODES, type Answer, type EraBlendItem, type EraPrintResult, type 
 
 export const PRIOR_WEIGHT = 3;
 export const ERA_TEMPERATURE = 0.008;
-export const INITIAL_DECISIONS = 8;
+export const INITIAL_DECISIONS = 13;
 export const ANCHOR_DECISIONS = ANCHOR_QUESTION_IDS.length;
+const MINIMUM_PERSISTED_RESULT_ANSWERS = 8;
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 const round1 = (value: number) => Math.round(value * 10) / 10;
@@ -335,7 +336,7 @@ export function validateLivingEraPrintAnswers(
 ): string[] {
   const errors: string[] = [];
 
-  if (baseAnswers.length < INITIAL_DECISIONS) {
+  if (baseAnswers.length < MINIMUM_PERSISTED_RESULT_ANSWERS) {
     errors.push("Living EraPrint requires a completed initial EraPrint.");
     return errors;
   }

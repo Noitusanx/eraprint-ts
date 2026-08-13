@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { PUBLIC_QUESTIONS } from "@/lib/data/public-catalog";
 import { getOwnedSnapshotContext } from "@/lib/living/living-server";
-import type { RefinementMode } from "@/lib/living/refinement-mode";
-import { selectNextAdaptiveQuestion, validateLivingEraPrintAnswers } from "@/lib/scoring/scoring-engine";
+import { RefinementError, refinementErrorResponse } from "@/lib/living/refinement-errors";
+import { buildRefinementProgress } from "@/lib/living/refinement-session";
 import type { Answer } from "@/lib/scoring/types";
 import { getAuthenticatedSupabase } from "@/lib/supabase/authenticated-server";
 
@@ -10,22 +10,24 @@ export async function POST(request: Request, context: { params: Promise<{ snapsh
   try {
     const { snapshotId } = await context.params;
     const body = await request.json() as { sessionId?: string; questionId?: string; choiceId?: string };
-    if (!body.sessionId || !body.questionId || !body.choiceId) throw new Error("A refinement answer is required.");
+    if (!body.sessionId || !body.questionId || !body.choiceId) {
+      throw new RefinementError("INVALID_ANSWER", "A refinement answer is required.", 400);
+    }
 
     const supabase = await getAuthenticatedSupabase(request);
     const owned = await getOwnedSnapshotContext(supabase, snapshotId);
-    if (!owned.isLatest) throw new Error("Refinement must update your latest EraPrint.");
+    if (!owned.isLatest) {
+      throw new RefinementError("NOT_LATEST_SNAPSHOT", "Refinement must update your latest EraPrint.", 409);
+    }
 
     const sessionResponse = await supabase.from("game_sessions")
-      .select("id,refinement_mode,refinement_target_count,base_snapshot_id")
+      .select("id,base_snapshot_id")
       .eq("id", body.sessionId).eq("profile_id", owned.user.id)
       .eq("status", "IN_PROGRESS").eq("session_type", "DEEPEN_PROFILE").maybeSingle();
     if (sessionResponse.error) throw sessionResponse.error;
     if (!sessionResponse.data || sessionResponse.data.base_snapshot_id !== snapshotId) {
-      throw new Error("Refinement session not found or not owned by this session.");
+      throw new RefinementError("INVALID_SESSION", "Refinement session not found.", 404);
     }
-    const mode = sessionResponse.data.refinement_mode as RefinementMode;
-    if (mode !== "CONTINUOUS") throw new Error("Invalid refinement mode.");
 
     const answersResponse = await supabase.from("answers")
       .select("question_id,choice_id,sequence_no")
@@ -36,17 +38,15 @@ export async function POST(request: Request, context: { params: Promise<{ snapsh
       choiceId: answer.choice_id,
     }));
     const submitted: Answer = { questionId: body.questionId, choiceId: body.choiceId };
-    const target = Number(sessionResponse.data.refinement_target_count);
-    if (!Number.isInteger(target) || target < 1) throw new Error("Invalid refinement target.");
     const alreadySaved = sessionAnswers.find((answer) => answer.questionId === submitted.questionId);
     let updatedAnswers = sessionAnswers;
     if (alreadySaved) {
       if (alreadySaved.choiceId !== submitted.choiceId) {
-        throw new Error("That question already has a different saved choice.");
+        throw new RefinementError("INVALID_ANSWER", "That question already has a different saved choice.", 409);
       }
     } else {
-      const errors = validateLivingEraPrintAnswers(owned.answers, [...sessionAnswers, submitted], target);
-      if (errors.length) throw new Error(errors[0]);
+      const progress = buildRefinementProgress(owned.answers, [...sessionAnswers, submitted]);
+      if (progress.errors.length) throw new RefinementError("INVALID_ANSWER", progress.errors[0], 400);
 
       const insert = await supabase.from("answers").insert({
         session_id: body.sessionId,
@@ -58,22 +58,19 @@ export async function POST(request: Request, context: { params: Promise<{ snapsh
       if (insert.error) throw insert.error;
       updatedAnswers = [...sessionAnswers, submitted];
     }
-    const complete = updatedAnswers.length === target;
-    const next = complete ? null : selectNextAdaptiveQuestion([...owned.answers, ...updatedAnswers]);
+    const progress = buildRefinementProgress(owned.answers, updatedAnswers);
+    const next = progress.nextQuestion;
     const question = next ? PUBLIC_QUESTIONS.find((item) => item.id === next.id) : null;
     if (next && !question) throw new Error("Public question data is missing.");
 
     return NextResponse.json({
-      sessionAnswerCount: updatedAnswers.length,
-      cumulativeAnswerCount: owned.answers.length + updatedAnswers.length,
-      remainingCount: PUBLIC_QUESTIONS.length - owned.answers.length - updatedAnswers.length,
-      shouldFinalize: complete || !next,
+      sessionAnswerCount: progress.sessionAnswerCount,
+      cumulativeAnswerCount: progress.cumulativeAnswerCount,
+      remainingCount: progress.remainingCount,
+      shouldFinalize: progress.catalogExhausted,
       question,
     });
   } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Unable to save refinement answer." },
-      { status: 400 },
-    );
+    return refinementErrorResponse(error, "Unable to save refinement answer.");
   }
 }

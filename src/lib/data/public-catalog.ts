@@ -709,4 +709,4 @@ export const PUBLIC_QUESTIONS: PublicQuestion[] = [
 ];
 
 export const PUBLIC_ANCHOR_QUESTION_IDS = ["Q01", "Q03", "Q04", "Q11", "Q19"] as const;
-export const PUBLIC_INITIAL_DECISIONS = 8;
+export const PUBLIC_INITIAL_DECISIONS = 13;

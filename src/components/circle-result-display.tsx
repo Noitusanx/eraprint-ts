@@ -63,9 +63,23 @@ export function CircleResultDisplay({
             {result.primaryEra.name} × {result.secondaryEra.name}
           </h1>
           <p className="result-summary">{buildCircleSummary(result)}</p>
-          <p className="circle-hidden-era">
-            Hidden Circle Era <strong>{result.hiddenEra.name}</strong>
-          </p>
+          <div className="era-trio circle-era-trio">
+            <article>
+              <span>Primary</span>
+              <strong>{result.primaryEra.name}</strong>
+              <em>{result.primaryEra.percentage.toFixed(1)}%</em>
+            </article>
+            <article>
+              <span>Secondary</span>
+              <strong>{result.secondaryEra.name}</strong>
+              <em>{result.secondaryEra.percentage.toFixed(1)}%</em>
+            </article>
+            <article>
+              <span>Hidden</span>
+              <strong>{result.hiddenEra.name}</strong>
+              <em>{result.hiddenEra.percentage.toFixed(1)}%</em>
+            </article>
+          </div>
         </div>
 
         <section className="result-section">

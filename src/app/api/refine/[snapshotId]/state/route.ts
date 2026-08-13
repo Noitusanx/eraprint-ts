@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { QUESTIONS } from "@/lib/data/catalog";
 import { getOwnedSnapshotContext } from "@/lib/living/living-server";
+import { refinementErrorResponse } from "@/lib/living/refinement-errors";
 import { getAuthenticatedSupabase } from "@/lib/supabase/authenticated-server";
 
 export async function GET(request: Request, context: { params: Promise<{ snapshotId: string }> }) {
@@ -11,7 +12,7 @@ export async function GET(request: Request, context: { params: Promise<{ snapsho
     const remainingCount = QUESTIONS.length - new Set(owned.answers.map((a) => a.questionId)).size;
 
     const activeResponse = await supabase.from("game_sessions")
-      .select("id,refinement_mode")
+      .select("id")
       .eq("profile_id", owned.user.id)
       .eq("base_snapshot_id", snapshotId)
       .eq("session_type", "DEEPEN_PROFILE")
@@ -55,16 +56,12 @@ export async function GET(request: Request, context: { params: Promise<{ snapsho
       canRefine: owned.isLatest && remainingCount > 0,
       activeRefinement: activeResponse.data ? {
         sessionId: activeResponse.data.id,
-        mode: activeResponse.data.refinement_mode,
         answeredCount: owned.answers.length + activeAnswerCount,
         remainingCount: Math.max(0, remainingCount - activeAnswerCount),
       } : null,
       previous,
     });
   } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Unable to load refinement state." },
-      { status: 403 },
-    );
+    return refinementErrorResponse(error, "Unable to load refinement state.");
   }
 }

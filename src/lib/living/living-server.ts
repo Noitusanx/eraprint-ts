@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Answer } from "@/lib/scoring/types";
+import { RefinementError } from "./refinement-errors";
 
 export async function getOwnedSnapshotContext(
   supabase: SupabaseClient,
@@ -7,7 +8,9 @@ export async function getOwnedSnapshotContext(
 ) {
   const userResponse = await supabase.auth.getUser();
   const user = userResponse.data.user;
-  if (userResponse.error || !user) throw new Error("Authentication is required.");
+  if (userResponse.error || !user) {
+    throw new RefinementError("AUTH_REQUIRED", "Authentication is required.", 401);
+  }
 
   const snapshotResponse = await supabase
     .from("eraprint_snapshots")
@@ -16,7 +19,13 @@ export async function getOwnedSnapshotContext(
     .eq("profile_id", user.id)
     .maybeSingle();
   if (snapshotResponse.error) throw snapshotResponse.error;
-  if (!snapshotResponse.data) throw new Error("Snapshot not found or not owned by this session.");
+  if (!snapshotResponse.data) {
+    throw new RefinementError(
+      "NOT_OWNER",
+      "This EraPrint is not owned by the current session.",
+      403,
+    );
+  }
 
   const latestResponse = await supabase.rpc("get_latest_owned_eraprint_snapshot");
   if (latestResponse.error) throw latestResponse.error;
@@ -33,7 +42,11 @@ export async function getOwnedSnapshotContext(
     choiceId: row.choice_id as string,
   }));
   if (answers.length !== snapshotResponse.data.answer_count) {
-    throw new Error("Snapshot answer history is incomplete.");
+    throw new RefinementError(
+      "INVALID_SNAPSHOT",
+      "This EraPrint has an incomplete answer history.",
+      409,
+    );
   }
 
   return {

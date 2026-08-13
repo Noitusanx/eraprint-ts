@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getOwnedSnapshotContext } from "../src/lib/living/living-server";
+import { RefinementError, refinementErrorResponse } from "../src/lib/living/refinement-errors";
 
 function fakeSupabase(ownerId: string, currentUserId: string) {
   return {
@@ -63,6 +64,23 @@ describe("Living EraPrint ownership", () => {
   it("does not expose another profile's snapshot for refinement", async () => {
     await expect(
       getOwnedSnapshotContext(fakeSupabase("owner-a", "visitor-b"), "snapshot-1"),
-    ).rejects.toThrow("Snapshot not found or not owned by this session.");
+    ).rejects.toMatchObject({ code: "NOT_OWNER", status: 403 });
+  });
+
+  it("returns a structured catalog-exhausted domain error", async () => {
+    const response = refinementErrorResponse(
+      new RefinementError(
+        "CATALOG_EXHAUSTED",
+        "You have answered every choice available right now.",
+        409,
+      ),
+      "Unable to start refinement.",
+    );
+
+    expect(response.status).toBe(409);
+    await expect(response.json()).resolves.toEqual({
+      error: "You have answered every choice available right now.",
+      code: "CATALOG_EXHAUSTED",
+    });
   });
 });

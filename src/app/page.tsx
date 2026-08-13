@@ -20,7 +20,8 @@ export default function HomePage() {
             Your EraPrint is still yours.
           </h1>
           <p className="hero-subtitle">
-            Make eight choices and see what your EraPrint looks like.
+            Make <span className="hero-thirteen">13</span> choices and see what
+            your EraPrint looks like.
           </p>
         </div>
 

@@ -21,7 +21,9 @@ export function MatchInviteClient({
   returnSnapshotId?: string;
 }) {
   const router = useRouter();
-  const [snapshotId, setSnapshotId] = useState<string | null>(returnSnapshotId ?? null);
+  const [snapshotId, setSnapshotId] = useState<string | null>(
+    returnSnapshotId ?? null,
+  );
   const [loading, setLoading] = useState(!returnSnapshotId);
   const [joining, setJoining] = useState(Boolean(returnSnapshotId));
   const [error, setError] = useState<string | null>(null);
@@ -47,7 +49,11 @@ export function MatchInviteClient({
           router.replace(`/match/result/${matchId}`);
         })
         .catch((caught) => {
-          setError(caught instanceof Error ? caught.message : "Unable to join this EraMatch.");
+          setError(
+            caught instanceof Error
+              ? caught.message
+              : "Unable to join this EraMatch.",
+          );
           setJoining(false);
         });
       return;
@@ -55,7 +61,13 @@ export function MatchInviteClient({
 
     getMyLatestSnapshotId()
       .then(setSnapshotId)
-      .catch((caught) => setError(caught instanceof Error ? caught.message : "Unable to check your EraPrint."))
+      .catch((caught) =>
+        setError(
+          caught instanceof Error
+            ? caught.message
+            : "Unable to check your EraPrint.",
+        ),
+      )
       .finally(() => setLoading(false));
   }, [invite, returnSnapshotId, router]);
 
@@ -68,7 +80,11 @@ export function MatchInviteClient({
       clearPendingSocialAction();
       router.replace(`/match/result/${matchId}`);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Unable to join this EraMatch.");
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : "Unable to join this EraMatch.",
+      );
       setJoining(false);
     }
   };
@@ -80,32 +96,47 @@ export function MatchInviteClient({
         <p className="eyebrow">ERAMATCH INVITE</p>
         <h1>{invite.owner.archetype} wants to compare EraPrints.</h1>
         <p>
-          Their profile begins with {invite.owner.primaryEra.name} × {invite.owner.secondaryEra.name}.
-          Join with your EraPrint to see how your profiles compare.
+          Their profile begins with {invite.owner.primaryEra.name} ×{" "}
+          {invite.owner.secondaryEra.name}. Join with your EraPrint to see how
+          your profiles compare.
         </p>
 
         {invite.status === "EXPIRED" ? (
           <div className="match-action-stack">
             <p role="alert">This EraMatch invite has expired.</p>
-            <Link className="primary-button" href="/">Back to EraPrint</Link>
+            <Link className="primary-button" href="/">
+              Back to EraPrint
+            </Link>
           </div>
         ) : loading ? (
           <p aria-live="polite">Checking for your EraPrint…</p>
         ) : snapshotId ? (
           <div className="match-action-stack">
-            <button className="primary-button" type="button" onClick={join} disabled={joining}>
+            <button
+              className="primary-button"
+              type="button"
+              onClick={join}
+              disabled={joining}
+            >
               {joining ? "Creating EraMatch…" : "Use my EraPrint"}
             </button>
-            <Link className="secondary-button" href="/play">Take a new EraPrint</Link>
+            <Link className="secondary-button" href="/play">
+              Take a new EraPrint
+            </Link>
           </div>
         ) : (
           <div className="match-action-stack">
-            <Link className="primary-button" href="/play">Take EraPrint to join</Link>
+            <Link className="primary-button" href="/play">
+              Take EraPrint to join
+            </Link>
           </div>
         )}
 
-        {error && <p className="game-error" role="alert">{error}</p>}
-        <p className="fine-print">EraMatch is just for fun. It isn&apos;t a measure of compatibility.</p>
+        {error && (
+          <p className="game-error" role="alert">
+            {error}
+          </p>
+        )}
       </section>
     </main>
   );

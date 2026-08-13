@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { calculateEraPrint, validateInitialGameSequence } from "@/lib/scoring/scoring-engine";
+import { calculateEraPrint, INITIAL_DECISIONS, validateInitialGameSequence } from "@/lib/scoring/scoring-engine";
 import type { Answer } from "@/lib/scoring/types";
 
 export async function POST(request: Request) {
@@ -7,9 +7,9 @@ export async function POST(request: Request) {
     const body = (await request.json()) as { answers?: Answer[] };
     const answers = body.answers ?? [];
 
-    if (!Array.isArray(answers) || answers.length !== 8) {
+    if (!Array.isArray(answers) || answers.length !== INITIAL_DECISIONS) {
       return NextResponse.json(
-        { error: "EraPrint result requires exactly 8 answers." },
+        { error: `EraPrint result requires exactly ${INITIAL_DECISIONS} answers.` },
         { status: 400 },
       );
     }

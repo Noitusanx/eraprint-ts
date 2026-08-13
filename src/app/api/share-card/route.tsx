@@ -1,6 +1,7 @@
 import { ImageResponse } from "next/og";
 import {
   calculateEraPrint,
+  INITIAL_DECISIONS,
   validateInitialGameSequence,
 } from "@/lib/scoring/scoring-engine";
 import {
@@ -232,8 +233,8 @@ async function buildShareCardData(request: Request): Promise<ShareCardData> {
     result = fetchedResult;
   } else {
     const answers = body.answers!;
-    if (answers.length !== 8) {
-      throw new Error("Share card requires exactly 8 answers.");
+    if (answers.length !== INITIAL_DECISIONS) {
+      throw new Error(`Share card requires exactly ${INITIAL_DECISIONS} answers.`);
     }
 
     const sequenceErrors = validateInitialGameSequence(answers);

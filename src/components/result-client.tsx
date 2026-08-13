@@ -174,7 +174,7 @@ export function ResultClient() {
       <main className="result-shell">
         <section className="empty-result-card">
           <p className="eyebrow">NO ERAPRINT FOUND</p>
-          <h1>Play the eight choices first.</h1>
+          <h1>Play the 13 choices first.</h1>
           <p>Your result is generated from the choices you make.</p>
           <Link className="primary-button" href="/play">
             Start EraPrint

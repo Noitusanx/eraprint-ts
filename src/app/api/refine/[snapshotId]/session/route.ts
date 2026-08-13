@@ -1,21 +1,27 @@
 import { NextResponse } from "next/server";
 import { PUBLIC_QUESTIONS } from "@/lib/data/public-catalog";
 import { getOwnedSnapshotContext } from "@/lib/living/living-server";
-import { refinementTarget } from "@/lib/living/refinement-mode";
-import { selectNextAdaptiveQuestion, validateLivingEraPrintAnswers } from "@/lib/scoring/scoring-engine";
+import { RefinementError, refinementErrorResponse } from "@/lib/living/refinement-errors";
+import { buildRefinementProgress } from "@/lib/living/refinement-session";
+import { selectNextAdaptiveQuestion } from "@/lib/scoring/scoring-engine";
 import type { Answer } from "@/lib/scoring/types";
 import { getAuthenticatedSupabase } from "@/lib/supabase/authenticated-server";
 
 export async function POST(request: Request, context: { params: Promise<{ snapshotId: string }> }) {
   try {
     const { snapshotId } = await context.params;
-    await request.json();
     const supabase = await getAuthenticatedSupabase(request);
     const owned = await getOwnedSnapshotContext(supabase, snapshotId);
-    if (!owned.isLatest) throw new Error("Refinement must start from your latest EraPrint.");
+    if (!owned.isLatest) {
+      throw new RefinementError(
+        "NOT_LATEST_SNAPSHOT",
+        "Refinement must start from your latest EraPrint.",
+        409,
+      );
+    }
 
     const existing = await supabase.from("game_sessions")
-      .select("id,base_snapshot_id,refinement_mode,refinement_target_count")
+      .select("id,base_snapshot_id")
       .eq("profile_id", owned.user.id)
       .eq("session_type", "DEEPEN_PROFILE")
       .eq("status", "IN_PROGRESS")
@@ -32,12 +38,15 @@ export async function POST(request: Request, context: { params: Promise<{ snapsh
       if (abandonResponse.error) throw abandonResponse.error;
       session = null;
     }
-    if (session && session.refinement_mode !== "CONTINUOUS") {
-      throw new Error("The saved refinement session cannot be resumed.");
-    }
     if (!session) {
-      const target = refinementTarget(owned.answers.length);
-      if (target === 0) throw new Error("No unused refinement question is available.");
+      const next = selectNextAdaptiveQuestion(owned.answers);
+      if (!next) {
+        throw new RefinementError(
+          "CATALOG_EXHAUSTED",
+          "You have answered every choice available right now.",
+          409,
+        );
+      }
       const inserted = await supabase.from("game_sessions").insert({
         client_request_id: crypto.randomUUID(),
         profile_id: owned.user.id,
@@ -45,9 +54,7 @@ export async function POST(request: Request, context: { params: Promise<{ snapsh
         status: "IN_PROGRESS",
         scoring_version: owned.snapshot.scoring_version,
         base_snapshot_id: snapshotId,
-        refinement_mode: "CONTINUOUS",
-        refinement_target_count: target,
-      }).select("id,base_snapshot_id,refinement_mode,refinement_target_count").single();
+      }).select("id,base_snapshot_id").single();
       if (inserted.error) throw inserted.error;
       session = inserted.data;
     }
@@ -60,35 +67,21 @@ export async function POST(request: Request, context: { params: Promise<{ snapsh
       questionId: answer.question_id,
       choiceId: answer.choice_id,
     }));
-    const mode = session.refinement_mode as "CONTINUOUS";
-    const target = Number(session.refinement_target_count);
-    if (!Number.isInteger(target) || target < 1) throw new Error("The saved refinement target is invalid.");
-    const errors = validateLivingEraPrintAnswers(
-      owned.answers,
-      sessionAnswers,
-      target,
-    );
-    if (errors.length) throw new Error(errors[0]);
-
-    const complete = sessionAnswers.length === target;
-    const next = complete ? null : selectNextAdaptiveQuestion([...owned.answers, ...sessionAnswers]);
+    const progress = buildRefinementProgress(owned.answers, sessionAnswers);
+    if (progress.errors.length) throw new RefinementError("INVALID_ANSWER", progress.errors[0], 409);
+    const next = progress.nextQuestion;
     const question = next ? PUBLIC_QUESTIONS.find((item) => item.id === next.id) : null;
     if (next && !question) throw new Error("Public question data is missing.");
 
     return NextResponse.json({
       sessionId: session.id,
-      mode,
-      sessionAnswerCount: sessionAnswers.length,
+      sessionAnswerCount: progress.sessionAnswerCount,
       baseAnswerCount: owned.answers.length,
       totalQuestionCount: PUBLIC_QUESTIONS.length,
-      targetNewAnswers: target,
-      shouldFinalize: complete,
+      shouldFinalize: progress.catalogExhausted,
       question,
     });
   } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Unable to start refinement." },
-      { status: 400 },
-    );
+    return refinementErrorResponse(error, "Unable to start refinement.");
   }
 }

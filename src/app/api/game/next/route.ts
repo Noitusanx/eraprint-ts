@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { selectNextAdaptiveQuestion, validateInitialGameSequence } from "@/lib/scoring/scoring-engine";
+import { ANCHOR_DECISIONS, INITIAL_DECISIONS, selectNextAdaptiveQuestion, validateInitialGameSequence } from "@/lib/scoring/scoring-engine";
 import type { Answer } from "@/lib/scoring/types";
 
 export async function POST(request: Request) {
@@ -7,9 +7,9 @@ export async function POST(request: Request) {
     const body = (await request.json()) as { answers?: Answer[] };
     const answers = body.answers ?? [];
 
-    if (!Array.isArray(answers) || answers.length < 5 || answers.length >= 8) {
+    if (!Array.isArray(answers) || answers.length < ANCHOR_DECISIONS || answers.length >= INITIAL_DECISIONS) {
       return NextResponse.json(
-        { error: "Adaptive selection expects 5-7 valid answers." },
+        { error: `Adaptive selection expects ${ANCHOR_DECISIONS}-${INITIAL_DECISIONS - 1} valid answers.` },
         { status: 400 },
       );
     }

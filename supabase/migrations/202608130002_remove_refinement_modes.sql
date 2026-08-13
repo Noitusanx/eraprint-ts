@@ -1,7 +1,8 @@
+-- Forward-compatible cleanup for databases where the earlier continuous-mode
+-- migration was already applied. Active sessions remain resumable because
+-- their identity is profile + base snapshot + IN_PROGRESS status.
 alter table public.game_sessions
-  drop constraint if exists game_sessions_refinement_mode_check;
-
-alter table public.game_sessions
+  drop constraint if exists game_sessions_refinement_mode_check,
   drop constraint if exists refinement_session_metadata,
   drop column if exists refinement_mode,
   drop column if exists refinement_target_count;

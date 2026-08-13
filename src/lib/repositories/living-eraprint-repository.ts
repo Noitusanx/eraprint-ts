@@ -1,6 +1,5 @@
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import type { PublicQuestion } from "@/lib/data/public-catalog";
-import type { RefinementMode } from "@/lib/living/refinement-mode";
 
 async function authenticatedFetch(path: string, init?: RequestInit) {
   const supabase = getSupabaseBrowserClient();
@@ -26,7 +25,6 @@ export type LivingState = {
   canRefine: boolean;
   activeRefinement: null | {
     sessionId: string;
-    mode: RefinementMode;
     answeredCount: number;
     remainingCount: number;
   };
@@ -41,8 +39,12 @@ export type LivingState = {
 };
 
 async function readJson<T>(response: Response): Promise<T> {
-  const body = await response.json() as T & { error?: string };
-  if (!response.ok) throw new Error(body.error ?? "Living EraPrint request failed.");
+  const body = await response.json() as T & { error?: string; code?: string };
+  if (!response.ok) {
+    const error = new Error(body.error ?? "Living EraPrint request failed.");
+    error.name = body.code ?? "LIVING_ERAPRINT_ERROR";
+    throw error;
+  }
   return body;
 }
 
@@ -52,11 +54,9 @@ export async function fetchLivingState(snapshotId: string): Promise<LivingState>
 
 export type RefinementSessionState = {
   sessionId: string;
-  mode: RefinementMode;
   sessionAnswerCount: number;
   baseAnswerCount: number;
   totalQuestionCount: number;
-  targetNewAnswers: number;
   shouldFinalize: boolean;
   question: PublicQuestion | null;
 };
@@ -64,7 +64,7 @@ export type RefinementSessionState = {
 export async function startOrResumeRefinement(snapshotId: string) {
   return readJson<RefinementSessionState>(await authenticatedFetch(
     `/api/refine/${snapshotId}/session`,
-    { method: "POST", body: JSON.stringify({}) },
+    { method: "POST" },
   ));
 }
 

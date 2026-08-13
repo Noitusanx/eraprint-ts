@@ -1,6 +1,6 @@
 # EraPrint
 
-EraPrint is a fan-made, mobile-first entertainment personality game. A new visitor makes eight choices, receives an EraPrint built from eight personality signals and 12 Era profiles, and can share or compare that persisted result with friends.
+EraPrint is a fan-made, mobile-first entertainment personality game. A new visitor makes 13 choices, receives an EraPrint built from eight personality signals and 12 Era profiles, and can share or compare that persisted result with friends.
 
 No Google or email login is required. When Supabase is configured, the app uses an anonymous authenticated session so a browser can own its profile, refine it over time, and create social experiences without exposing private profile IDs.
 
@@ -8,8 +8,8 @@ No Google or email login is required. When Supabase is configured, the app uses 
 
 ### Initial EraPrint
 
-- Exactly 5 fixed anchor questions followed by 3 adaptive questions.
-- The first result is generated only after all 8 questions are answered.
+- Exactly 5 fixed anchor questions followed by 8 adaptive questions.
+- The first result is generated only after all 13 questions are answered.
 - Adaptive selection is deterministic and runs on the server.
 - 8 personality signals, 12 Era profiles, and a 30-question catalog.
 - Primary, Secondary, and Hidden Era results.
@@ -30,11 +30,11 @@ No Google or email login is required. When Supabase is configured, the app uses 
 - An owner can optionally refine their latest persisted EraPrint.
 - Refinement continues through unused adaptive questions until the user finishes later or exhausts the catalog.
 - Previously answered questions are never selected again.
-- Results are calculated from all cumulative answers: `8 → 11 → 14 → 17 → ...`.
-- Every completed round creates a new immutable snapshot instead of overwriting the old one.
+- Results are calculated from the full cumulative answer history.
+- A completed refinement creates a new immutable snapshot instead of overwriting the old one.
 - Snapshot history records the previous snapshot, answer count, catalog version, and scoring version.
 - The updated result can show meaningful changes from the immediately previous snapshot.
-- Refinement stops when fewer than three unused catalog questions remain.
+- Refinement stops only when the 30-question catalog is exhausted.
 - Only the profile owner can refine a snapshot, and refinement must start from the latest owned snapshot.
 
 ### EraMatch
@@ -83,10 +83,10 @@ The initial game and Living EraPrint use separate validation boundaries:
 
 ```text
 validateInitialGameSequence(...)
-  enforces the ordered 5-anchor + 3-adaptive initial flow
+  enforces the ordered 5-anchor + 8-adaptive initial flow
 
 validateLivingEraPrintAnswers(...)
-  validates cumulative history plus up to 3 new deterministic answers
+  validates the cumulative history and every new deterministic answer
 ```
 
 For every adaptive step, the selector:
@@ -169,10 +169,9 @@ One anonymous profile can own many immutable snapshots:
 
 ```text
 Profile
-├── Snapshot 1 — 8 answers
-├── Snapshot 2 — 11 answers
-├── Snapshot 3 — 14 answers
-└── Snapshot 4 — 17 answers
+├── Historical Snapshot — 8 answers (legacy initial flow)
+├── Snapshot 1 — 13 answers
+└── Snapshot 2 — cumulative refinement history
 ```
 
 `eraprint_snapshot_answers` stores the exact cumulative answer manifest for each snapshot. `previous_snapshot_id` links its history. Result evidence and snapshots are append-only so old result, Match, Circle, and Share Card sources cannot silently change.
@@ -183,7 +182,7 @@ Browser writes use the anonymous Supabase JWT and PostgreSQL RLS. Server routes 
 
 ```text
 /                              homepage
-/play                          initial 8-question EraPrint
+/play                          initial 13-question EraPrint
 /result                        result calculation and initial persistence
 /result/{snapshotId}           immutable public EraPrint snapshot
 /refine/{snapshotId}           owner-only Living EraPrint round
@@ -208,6 +207,8 @@ Living EraPrint:
 
 ```text
 GET  /api/refine/{snapshotId}/state
+POST /api/refine/{snapshotId}/session
+POST /api/refine/{snapshotId}/answer
 POST /api/refine/{snapshotId}/next
 POST /api/refine/{snapshotId}/complete
 ```
@@ -242,7 +243,7 @@ Open `http://localhost:3000`.
 
 ### Demo mode
 
-The initial eight-question game and local result work without Supabase. The latest initial answer session is kept in `localStorage`, while scoring still runs through the Next.js server route.
+The initial 13-question game and local result work without Supabase. The latest initial answer session is kept in `localStorage`, while scoring still runs through the Next.js server route.
 
 Features that require owned persisted snapshots—Living EraPrint, immutable public result URLs, EraMatch, and Circle—require Supabase configuration.
 
@@ -282,6 +283,13 @@ supabase/migrations/202608080001_era_match_v1.sql
 supabase/migrations/202608090001_match_result_profile_links.sql
 supabase/migrations/202608100001_circle_v1.sql
 supabase/migrations/202608100002_living_eraprint_v1.sql
+supabase/migrations/202608110001_resumable_refinement.sql
+supabase/migrations/202608110002_circle_lobby_roles.sql
+supabase/migrations/202608110003_circle_result_member_identity.sql
+supabase/migrations/202608120001_circle_lobby_creator_identity.sql
+supabase/migrations/202608130001_continuous_refinement.sql
+supabase/migrations/202608130002_remove_refinement_modes.sql
+supabase/migrations/202608130003_initial_thirteen.sql
 ```
 
 The seed contains 8 traits, 12 Eras, 96 Era-signal values, 30 questions, all public choices, and all hidden effects.
