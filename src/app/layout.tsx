@@ -4,7 +4,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "EraPrint | Find Your EraPrint",
   description:
-    "Make 13 choices, get your EraPrint, and compare it with friends.",
+    "Make 13 choices, get your EraPrint and compare it with friends.",
 };
 
 export const viewport: Viewport = {
