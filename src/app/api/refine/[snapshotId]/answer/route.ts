@@ -20,18 +20,22 @@ export async function POST(request: Request, context: { params: Promise<{ snapsh
       throw new RefinementError("NOT_LATEST_SNAPSHOT", "Refinement must update your latest EraPrint.", 409);
     }
 
-    const sessionResponse = await supabase.from("game_sessions")
-      .select("id,base_snapshot_id")
-      .eq("id", body.sessionId).eq("profile_id", owned.user.id)
-      .eq("status", "IN_PROGRESS").eq("session_type", "DEEPEN_PROFILE").maybeSingle();
+    const [sessionResponse, answersResponse] = await Promise.all([
+      supabase.from("game_sessions")
+        .select("id,base_snapshot_id")
+        .eq("id", body.sessionId).eq("profile_id", owned.user.id)
+        .eq("status", "IN_PROGRESS").eq("session_type", "DEEPEN_PROFILE").maybeSingle(),
+      supabase.from("answers")
+        .select("question_id,choice_id,sequence_no")
+        .eq("session_id", body.sessionId)
+        .eq("profile_id", owned.user.id)
+        .order("sequence_no"),
+    ]);
     if (sessionResponse.error) throw sessionResponse.error;
     if (!sessionResponse.data || sessionResponse.data.base_snapshot_id !== snapshotId) {
       throw new RefinementError("INVALID_SESSION", "Refinement session not found.", 404);
     }
 
-    const answersResponse = await supabase.from("answers")
-      .select("question_id,choice_id,sequence_no")
-      .eq("session_id", body.sessionId).order("sequence_no");
     if (answersResponse.error) throw answersResponse.error;
     const sessionAnswers: Answer[] = (answersResponse.data ?? []).map((answer) => ({
       questionId: answer.question_id,

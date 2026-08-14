@@ -83,11 +83,6 @@ export function RefineClient({ snapshotId }: {
     setLoading(true);
     setError(null);
     try {
-      const livingState = await fetchLivingState(snapshotId);
-      if (!livingState.isLatest && livingState.latestSnapshotId) {
-        router.replace(`/result/${livingState.latestSnapshotId}`);
-        return;
-      }
       const saved = await saveRefinementAnswer(
         snapshotId,
         session.sessionId,
@@ -109,6 +104,17 @@ export function RefineClient({ snapshotId }: {
         throw new Error("No unused refinement question is available.");
       }
     } catch (caught) {
+      if (caught instanceof Error && caught.name === "NOT_LATEST_SNAPSHOT") {
+        try {
+          const livingState = await fetchLivingState(snapshotId);
+          if (livingState.latestSnapshotId) {
+            router.replace(`/result/${livingState.latestSnapshotId}`);
+            return;
+          }
+        } catch {
+          // Fall through to the original server error below.
+        }
+      }
       setError(caught instanceof Error ? caught.message : "Unable to continue refinement.");
     } finally {
       setLoading(false);
