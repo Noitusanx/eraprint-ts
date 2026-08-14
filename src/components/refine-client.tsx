@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { flushSync } from "react-dom";
 import { useRouter } from "next/navigation";
 import type { PublicQuestion } from "@/lib/data/public-catalog";
 import {
@@ -12,9 +13,7 @@ import {
   type RefinementSessionState,
 } from "@/lib/repositories/living-eraprint-repository";
 
-export function RefineClient({ snapshotId }: {
-  snapshotId: string;
-}) {
+export function RefineClient({ snapshotId }: { snapshotId: string }) {
   const router = useRouter();
   const [session, setSession] = useState<RefinementSessionState | null>(null);
   const [question, setQuestion] = useState<PublicQuestion | null>(null);
@@ -33,7 +32,8 @@ export function RefineClient({ snapshotId }: {
       try {
         const livingState = await fetchLivingState(snapshotId);
         if (!livingState.isLatest && livingState.latestSnapshotId) {
-          if (!cancelled) router.replace(`/result/${livingState.latestSnapshotId}`);
+          if (!cancelled)
+            router.replace(`/result/${livingState.latestSnapshotId}`);
           return;
         }
         const nextSession = await startOrResumeRefinement(snapshotId);
@@ -41,16 +41,24 @@ export function RefineClient({ snapshotId }: {
         setSession(nextSession);
         setQuestion(nextSession.question);
         if (nextSession.shouldFinalize) await finalize(nextSession.sessionId);
-        else if (!nextSession.question) throw new Error("No unused refinement question is available.");
+        else if (!nextSession.question)
+          throw new Error("No unused refinement question is available.");
       } catch (caught) {
-        if (!cancelled) setError(caught instanceof Error ? caught.message : "Unable to start refinement.");
+        if (!cancelled)
+          setError(
+            caught instanceof Error
+              ? caught.message
+              : "Unable to start refinement.",
+          );
       } finally {
         if (!cancelled) setLoading(false);
       }
     }
 
     start();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [router, snapshotId]);
 
   useEffect(() => {
@@ -60,7 +68,11 @@ export function RefineClient({ snapshotId }: {
       if (document.visibilityState === "hidden") return;
       try {
         const livingState = await fetchLivingState(snapshotId);
-        if (!cancelled && !livingState.isLatest && livingState.latestSnapshotId) {
+        if (
+          !cancelled &&
+          !livingState.isLatest &&
+          livingState.latestSnapshotId
+        ) {
           router.replace(`/result/${livingState.latestSnapshotId}`);
         }
       } catch {
@@ -68,7 +80,9 @@ export function RefineClient({ snapshotId }: {
       }
     }
 
-    const handleVisibility = () => { void checkForNewerResult(); };
+    const handleVisibility = () => {
+      void checkForNewerResult();
+    };
     window.addEventListener("focus", handleVisibility);
     document.addEventListener("visibilitychange", handleVisibility);
     return () => {
@@ -87,16 +101,24 @@ export function RefineClient({ snapshotId }: {
       choiceId,
     );
     const prefetchedQuestion = session.nextByChoice[choiceId] ?? null;
-    setLoading(true);
-    setError(null);
     if (hasPrefetchedQuestion) {
-      setSession({
-        ...session,
-        sessionAnswerCount: session.sessionAnswerCount + 1,
-        question: prefetchedQuestion,
-        nextByChoice: {},
+      flushSync(() => {
+        setLoading(true);
+        setError(null);
+        setSession({
+          ...session,
+          sessionAnswerCount: session.sessionAnswerCount + 1,
+          question: prefetchedQuestion,
+          nextByChoice: {},
+        });
+        setQuestion(prefetchedQuestion);
       });
-      setQuestion(prefetchedQuestion);
+      await new Promise<void>((resolve) => {
+        window.requestAnimationFrame(() => resolve());
+      });
+    } else {
+      setLoading(true);
+      setError(null);
     }
     try {
       const saved = await saveRefinementAnswer(
@@ -115,7 +137,10 @@ export function RefineClient({ snapshotId }: {
       setSession(updatedSession);
       setQuestion(saved.question);
       if (saved.shouldFinalize) {
-        const completed = await completeRefinement(snapshotId, session.sessionId);
+        const completed = await completeRefinement(
+          snapshotId,
+          session.sessionId,
+        );
         router.replace(`/result/${completed.snapshotId}`);
       } else if (!saved.question) {
         throw new Error("No unused refinement question is available.");
@@ -134,7 +159,11 @@ export function RefineClient({ snapshotId }: {
           // Fall through to the original server error below.
         }
       }
-      setError(caught instanceof Error ? caught.message : "Unable to continue refinement.");
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : "Unable to continue refinement.",
+      );
     } finally {
       setLoading(false);
     }
@@ -142,22 +171,34 @@ export function RefineClient({ snapshotId }: {
 
   if (loading && !question) {
     return (
-      <main className="game-shell refine-loading-shell" aria-busy="true" aria-live="polite">
+      <main
+        className="game-shell refine-loading-shell"
+        aria-busy="true"
+        aria-live="polite"
+      >
         <div className="ambient ambient-one" />
         <div className="ambient ambient-three" />
         <section className="game-card result-processing">
           <header className="game-header">
-            <Link className="wordmark" href={`/result/${snapshotId}`}>EraPrint</Link>
-            <span className="result-version">LIVING PROFILE</span>
+            <Link className="wordmark" href={`/result/${snapshotId}`}>
+              EraPrint
+            </Link>
           </header>
           <div className="result-processing-body refine-processing-body">
-            <div className="result-processing-mark" aria-hidden="true"><span /><span /><span /></div>
+            <div className="result-processing-mark" aria-hidden="true">
+              <span />
+              <span />
+              <span />
+            </div>
             <p className="eyebrow">LIVING ERAPRINT</p>
             <h1>Finding your next question.</h1>
             <p className="result-processing-copy">
-              We&apos;re picking something new based on the choices you&apos;ve already made.
+              We&apos;re picking something new based on the choices you&apos;ve
+              already made.
             </p>
-            <div className="result-processing-track" aria-hidden="true"><span /></div>
+            <div className="result-processing-track" aria-hidden="true">
+              <span />
+            </div>
           </div>
         </section>
       </main>
@@ -170,14 +211,17 @@ export function RefineClient({ snapshotId }: {
         <div className="ambient ambient-one" />
         <section className="game-card refine-unavailable-card">
           <header className="game-header">
-            <Link className="wordmark" href={`/result/${snapshotId}`}>EraPrint</Link>
-            <span className="result-version">LIVING PROFILE</span>
+            <Link className="wordmark" href={`/result/${snapshotId}`}>
+              EraPrint
+            </Link>
           </header>
           <div className="refine-unavailable-body">
             <p className="eyebrow">LIVING ERAPRINT</p>
             <h1>This EraPrint can&apos;t be refined from here.</h1>
             <p>{error}</p>
-            <Link className="secondary-button" href={`/result/${snapshotId}`}>Back to result</Link>
+            <Link className="secondary-button" href={`/result/${snapshotId}`}>
+              Back to result
+            </Link>
           </div>
         </section>
       </main>
@@ -185,7 +229,8 @@ export function RefineClient({ snapshotId }: {
   }
   if (!question || !session) return null;
 
-  const cumulativeAnswered = session.baseAnswerCount + session.sessionAnswerCount;
+  const cumulativeAnswered =
+    session.baseAnswerCount + session.sessionAnswerCount;
   const totalAfterChoice = cumulativeAnswered + 1;
   const progress = (cumulativeAnswered / session.totalQuestionCount) * 100;
 
@@ -194,24 +239,37 @@ export function RefineClient({ snapshotId }: {
       <div className="ambient ambient-one" />
       <section className="game-card">
         <header className="game-header">
-          <Link className="wordmark" href={`/result/${snapshotId}`}>EraPrint</Link>
+          <Link className="wordmark" href={`/result/${snapshotId}`}>
+            EraPrint
+          </Link>
           <span className="step-counter">
             {totalAfterChoice}/{session.totalQuestionCount}
           </span>
         </header>
-        <div className="progress-track"><div className="progress-fill" style={{ width: `${progress}%` }} /></div>
+        <div className="progress-track">
+          <div className="progress-fill" style={{ width: `${progress}%` }} />
+        </div>
         <div className="question-stage" key={question.id}>
           <div className="question-meta">
             <span>{question.category}</span>
             <span className="adaptive-pill">picked for you</span>
           </div>
           <p className="eyebrow">
-            {cumulativeAnswered} answered · {session.totalQuestionCount - cumulativeAnswered} remaining
+            {cumulativeAnswered} answered ·{" "}
+            {session.totalQuestionCount - cumulativeAnswered} remaining
           </p>
           <h1 className="question-title">{question.prompt}</h1>
-          <div className={`choice-grid ${question.choices.length === 2 ? "choice-grid-two" : ""}`}>
+          <div
+            className={`choice-grid ${question.choices.length === 2 ? "choice-grid-two" : ""}`}
+          >
             {question.choices.map((choice) => (
-              <button className="choice-card" type="button" key={choice.id} disabled={loading} onClick={() => choose(choice.id)}>
+              <button
+                className="choice-card"
+                type="button"
+                key={choice.id}
+                disabled={loading}
+                onClick={() => choose(choice.id)}
+              >
                 <span>{choice.label}</span>
               </button>
             ))}
@@ -219,9 +277,13 @@ export function RefineClient({ snapshotId }: {
           {error && <p className="game-error">{error}</p>}
           <div className="refine-exit">
             {loading ? (
-              <span className="refine-exit-link refine-exit-saving">Saving your choice…</span>
+              <span className="refine-exit-link refine-exit-saving">
+                Saving your choice…
+              </span>
             ) : (
-              <Link className="refine-exit-link" href={`/result/${snapshotId}`}>Finish later</Link>
+              <Link className="refine-exit-link" href={`/result/${snapshotId}`}>
+                Finish later
+              </Link>
             )}
             <small>Your progress is saved automatically.</small>
           </div>
