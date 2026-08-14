@@ -3,6 +3,7 @@ import { PUBLIC_QUESTIONS } from "@/lib/data/public-catalog";
 import { getOwnedSnapshotContext } from "@/lib/living/living-server";
 import { RefinementError, refinementErrorResponse } from "@/lib/living/refinement-errors";
 import { buildRefinementProgress } from "@/lib/living/refinement-session";
+import { buildRefinementQuestionPrefetch } from "@/lib/living/refinement-prefetch";
 import { selectNextAdaptiveQuestion } from "@/lib/scoring/scoring-engine";
 import type { Answer } from "@/lib/scoring/types";
 import { getAuthenticatedSupabase } from "@/lib/supabase/authenticated-server";
@@ -70,8 +71,15 @@ export async function POST(request: Request, context: { params: Promise<{ snapsh
     const progress = buildRefinementProgress(owned.answers, sessionAnswers);
     if (progress.errors.length) throw new RefinementError("INVALID_ANSWER", progress.errors[0], 409);
     const next = progress.nextQuestion;
-    const question = next ? PUBLIC_QUESTIONS.find((item) => item.id === next.id) : null;
+    const question = next
+      ? PUBLIC_QUESTIONS.find((item) => item.id === next.id) ?? null
+      : null;
     if (next && !question) throw new Error("Public question data is missing.");
+    const nextByChoice = buildRefinementQuestionPrefetch(
+      owned.answers,
+      sessionAnswers,
+      question,
+    );
 
     return NextResponse.json({
       sessionId: session.id,
@@ -80,6 +88,7 @@ export async function POST(request: Request, context: { params: Promise<{ snapsh
       totalQuestionCount: PUBLIC_QUESTIONS.length,
       shouldFinalize: progress.catalogExhausted,
       question,
+      nextByChoice,
     });
   } catch (error) {
     return refinementErrorResponse(error, "Unable to start refinement.");

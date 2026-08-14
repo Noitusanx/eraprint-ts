@@ -80,8 +80,24 @@ export function RefineClient({ snapshotId }: {
 
   async function choose(choiceId: string) {
     if (!session || !question || loading) return;
+    const previousSession = session;
+    const previousQuestion = question;
+    const hasPrefetchedQuestion = Object.prototype.hasOwnProperty.call(
+      session.nextByChoice,
+      choiceId,
+    );
+    const prefetchedQuestion = session.nextByChoice[choiceId] ?? null;
     setLoading(true);
     setError(null);
+    if (hasPrefetchedQuestion) {
+      setSession({
+        ...session,
+        sessionAnswerCount: session.sessionAnswerCount + 1,
+        question: prefetchedQuestion,
+        nextByChoice: {},
+      });
+      setQuestion(prefetchedQuestion);
+    }
     try {
       const saved = await saveRefinementAnswer(
         snapshotId,
@@ -94,6 +110,7 @@ export function RefineClient({ snapshotId }: {
         sessionAnswerCount: saved.sessionAnswerCount,
         shouldFinalize: saved.shouldFinalize,
         question: saved.question,
+        nextByChoice: saved.nextByChoice,
       };
       setSession(updatedSession);
       setQuestion(saved.question);
@@ -104,6 +121,8 @@ export function RefineClient({ snapshotId }: {
         throw new Error("No unused refinement question is available.");
       }
     } catch (caught) {
+      setSession(previousSession);
+      setQuestion(previousQuestion);
       if (caught instanceof Error && caught.name === "NOT_LATEST_SNAPSHOT") {
         try {
           const livingState = await fetchLivingState(snapshotId);
@@ -199,7 +218,11 @@ export function RefineClient({ snapshotId }: {
           </div>
           {error && <p className="game-error">{error}</p>}
           <div className="refine-exit">
-            <Link className="refine-exit-link" href={`/result/${snapshotId}`}>Finish later</Link>
+            {loading ? (
+              <span className="refine-exit-link refine-exit-saving">Saving your choice…</span>
+            ) : (
+              <Link className="refine-exit-link" href={`/result/${snapshotId}`}>Finish later</Link>
+            )}
             <small>Your progress is saved automatically.</small>
           </div>
         </div>

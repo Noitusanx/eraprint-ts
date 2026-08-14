@@ -12,6 +12,8 @@ import {
 } from "../src/lib/scoring/scoring-engine";
 import { buildRefinedEraPrint } from "../src/lib/living/refinement-result";
 import { buildRefinementProgress } from "../src/lib/living/refinement-session";
+import { buildRefinementQuestionPrefetch } from "../src/lib/living/refinement-prefetch";
+import { PUBLIC_QUESTIONS } from "../src/lib/data/public-catalog";
 import type { Answer } from "../src/lib/scoring/types";
 import { buildClarityExplanation, traitDisplayDirection } from "../src/lib/scoring/result-copy";
 
@@ -243,6 +245,25 @@ describe("EraPrint scoring engine", () => {
     expect(progress.nextQuestion).not.toBeNull();
     expect(progress).not.toHaveProperty("mode");
     expect(progress).not.toHaveProperty("targetNewAnswers");
+  });
+
+  it("prefetches the deterministic next question for every current choice", () => {
+    const initial: Answer[] = guardedAssertive.slice(0, 5);
+    while (initial.length < INITIAL_DECISIONS) {
+      const next = selectNextAdaptiveQuestion(initial)!;
+      initial.push({ questionId: next.id, choiceId: next.choices[0].id });
+    }
+    const current = selectNextAdaptiveQuestion(initial)!;
+    const publicCurrent = PUBLIC_QUESTIONS.find((question) => question.id === current.id)!;
+    const prefetched = buildRefinementQuestionPrefetch(initial, [], publicCurrent);
+
+    for (const choice of current.choices) {
+      const expected = selectNextAdaptiveQuestion([
+        ...initial,
+        { questionId: current.id, choiceId: choice.id },
+      ]);
+      expect(prefetched[choice.id]?.id ?? null).toBe(expected?.id ?? null);
+    }
   });
 
   it("resumes a long refinement from persisted answers deterministically", () => {

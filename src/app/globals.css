@@ -2388,6 +2388,12 @@ button {
   text-underline-offset: 5px;
 }
 
+.refine-exit-saving {
+  text-decoration: none;
+  cursor: wait;
+  opacity: .72;
+}
+
 .text-button {
   display: inline-flex;
   min-height: 44px;

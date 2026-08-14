@@ -1,5 +1,6 @@
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import type { PublicQuestion } from "@/lib/data/public-catalog";
+import type { RefinementQuestionPrefetch } from "@/lib/living/refinement-prefetch";
 
 async function authenticatedFetch(path: string, init?: RequestInit) {
   const supabase = getSupabaseBrowserClient();
@@ -59,6 +60,7 @@ export type RefinementSessionState = {
   totalQuestionCount: number;
   shouldFinalize: boolean;
   question: PublicQuestion | null;
+  nextByChoice: RefinementQuestionPrefetch;
 };
 
 export async function startOrResumeRefinement(snapshotId: string) {
@@ -80,6 +82,7 @@ export async function saveRefinementAnswer(
     remainingCount: number;
     shouldFinalize: boolean;
     question: PublicQuestion | null;
+    nextByChoice: RefinementQuestionPrefetch;
   }>(await authenticatedFetch(`/api/refine/${snapshotId}/answer`, {
     method: "POST",
     body: JSON.stringify({ sessionId, questionId, choiceId }),

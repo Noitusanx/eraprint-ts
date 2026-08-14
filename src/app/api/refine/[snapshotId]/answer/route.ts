@@ -3,6 +3,7 @@ import { PUBLIC_QUESTIONS } from "@/lib/data/public-catalog";
 import { getOwnedSnapshotContext } from "@/lib/living/living-server";
 import { RefinementError, refinementErrorResponse } from "@/lib/living/refinement-errors";
 import { buildRefinementProgress } from "@/lib/living/refinement-session";
+import { buildRefinementQuestionPrefetch } from "@/lib/living/refinement-prefetch";
 import type { Answer } from "@/lib/scoring/types";
 import { getAuthenticatedSupabase } from "@/lib/supabase/authenticated-server";
 
@@ -64,8 +65,15 @@ export async function POST(request: Request, context: { params: Promise<{ snapsh
     }
     const progress = buildRefinementProgress(owned.answers, updatedAnswers);
     const next = progress.nextQuestion;
-    const question = next ? PUBLIC_QUESTIONS.find((item) => item.id === next.id) : null;
+    const question = next
+      ? PUBLIC_QUESTIONS.find((item) => item.id === next.id) ?? null
+      : null;
     if (next && !question) throw new Error("Public question data is missing.");
+    const nextByChoice = buildRefinementQuestionPrefetch(
+      owned.answers,
+      updatedAnswers,
+      question,
+    );
 
     return NextResponse.json({
       sessionAnswerCount: progress.sessionAnswerCount,
@@ -73,6 +81,7 @@ export async function POST(request: Request, context: { params: Promise<{ snapsh
       remainingCount: progress.remainingCount,
       shouldFinalize: progress.catalogExhausted,
       question,
+      nextByChoice,
     });
   } catch (error) {
     return refinementErrorResponse(error, "Unable to save refinement answer.");
