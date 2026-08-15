@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { PublicQuestion } from "@/lib/data/public-catalog";
-import { selectNextPublicRefinementQuestion } from "@/lib/living/refinement-prefetch";
+import { selectNextPublicAdaptiveQuestion } from "@/lib/scoring/public-adaptive";
 import type { Answer } from "@/lib/scoring/types";
 import {
   completeRefinement,
@@ -107,7 +107,7 @@ export function RefineClient({ snapshotId }: { snapshotId: string }) {
       choiceId,
     };
     const updatedAnswers = [...answersRef.current, submitted];
-    const nextQuestion = selectNextPublicRefinementQuestion(updatedAnswers);
+    const nextQuestion = selectNextPublicAdaptiveQuestion(updatedAnswers);
     answersRef.current = updatedAnswers;
 
     if (!nextQuestion) setLoading(true);

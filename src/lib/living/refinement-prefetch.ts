@@ -1,18 +1,8 @@
 import { PUBLIC_QUESTIONS, type PublicQuestion } from "../data/public-catalog";
-import { selectNextAdaptiveQuestion } from "../scoring/scoring-engine";
 import type { Answer } from "../scoring/types";
 import { buildRefinementProgress } from "./refinement-session";
 
 export type RefinementQuestionPrefetch = Record<string, PublicQuestion | null>;
-
-export function selectNextPublicRefinementQuestion(
-  answers: Answer[],
-): PublicQuestion | null {
-  const next = selectNextAdaptiveQuestion(answers);
-  return next
-    ? PUBLIC_QUESTIONS.find((candidate) => candidate.id === next.id) ?? null
-    : null;
-}
 
 export function buildRefinementQuestionPrefetch(
   baseAnswers: Answer[],

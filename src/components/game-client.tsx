@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -10,6 +10,7 @@ import {
   type PublicChoice,
   type PublicQuestion,
 } from "@/lib/data/public-catalog";
+import { selectNextPublicAdaptiveQuestion } from "@/lib/scoring/public-adaptive";
 import type { Answer } from "@/lib/scoring/types";
 
 const STORAGE_KEY = "eraprint:lastSession";
@@ -56,25 +57,6 @@ function ChoiceCard({
   );
 }
 
-async function fetchNextAdaptiveQuestion(answers: Answer[]): Promise<string | null> {
-  const response = await fetch("/api/game/next", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ answers }),
-  });
-
-  const body = (await response.json()) as {
-    questionId?: string | null;
-    error?: string;
-  };
-
-  if (!response.ok) {
-    throw new Error(body.error ?? "Unable to load the next choice.");
-  }
-
-  return body.questionId ?? null;
-}
-
 export function GameClient() {
   const router = useRouter();
   const anchors = useMemo(
@@ -93,15 +75,17 @@ export function GameClient() {
   const [answers, setAnswers] = useState<Answer[]>([]);
   const [advancing, setAdvancing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const choosingRef = useRef(false);
 
   const currentQuestionId = questionIds[answers.length];
   const currentQuestion: PublicQuestion | undefined = PUBLIC_QUESTIONS.find(
     (question) => question.id === currentQuestionId,
   );
 
-  const choose = async (choiceId: string) => {
-    if (!currentQuestion || advancing) return;
+  const choose = (choiceId: string) => {
+    if (!currentQuestion || advancing || choosingRef.current) return;
 
+    choosingRef.current = true;
     setAdvancing(true);
     setError(null);
 
@@ -122,7 +106,7 @@ export function GameClient() {
       }
 
       if (nextAnswers.length >= PUBLIC_ANCHOR_QUESTION_IDS.length) {
-        const nextQuestionId = await fetchNextAdaptiveQuestion(nextAnswers);
+        const nextQuestionId = selectNextPublicAdaptiveQuestion(nextAnswers)?.id;
 
         if (!nextQuestionId) {
           throw new Error("No adaptive question was available.");
@@ -135,7 +119,6 @@ export function GameClient() {
         );
       }
 
-      await new Promise((resolve) => window.setTimeout(resolve, 120));
       setAnswers(nextAnswers);
     } catch (caught) {
       setError(
@@ -144,7 +127,10 @@ export function GameClient() {
           : "Something went wrong while loading the next choice.",
       );
     } finally {
-      setAdvancing(false);
+      window.requestAnimationFrame(() => {
+        choosingRef.current = false;
+        setAdvancing(false);
+      });
     }
   };
 

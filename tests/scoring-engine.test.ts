@@ -12,10 +12,8 @@ import {
 } from "../src/lib/scoring/scoring-engine";
 import { buildRefinedEraPrint } from "../src/lib/living/refinement-result";
 import { buildRefinementProgress } from "../src/lib/living/refinement-session";
-import {
-  buildRefinementQuestionPrefetch,
-  selectNextPublicRefinementQuestion,
-} from "../src/lib/living/refinement-prefetch";
+import { buildRefinementQuestionPrefetch } from "../src/lib/living/refinement-prefetch";
+import { selectNextPublicAdaptiveQuestion } from "../src/lib/scoring/public-adaptive";
 import { PUBLIC_QUESTIONS } from "../src/lib/data/public-catalog";
 import type { Answer } from "../src/lib/scoring/types";
 import { buildClarityExplanation, traitDisplayDirection } from "../src/lib/scoring/result-copy";
@@ -277,7 +275,7 @@ describe("EraPrint scoring engine", () => {
     }
 
     for (let index = 0; index < 5; index += 1) {
-      const localQuestion = selectNextPublicRefinementQuestion(answers);
+      const localQuestion = selectNextPublicAdaptiveQuestion(answers);
       const canonicalQuestion = selectNextAdaptiveQuestion(answers);
       expect(localQuestion?.id).toBe(canonicalQuestion?.id);
       expect(localQuestion).not.toBeNull();
