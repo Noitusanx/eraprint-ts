@@ -12,7 +12,10 @@ import {
 } from "../src/lib/scoring/scoring-engine";
 import { buildRefinedEraPrint } from "../src/lib/living/refinement-result";
 import { buildRefinementProgress } from "../src/lib/living/refinement-session";
-import { buildRefinementQuestionPrefetch } from "../src/lib/living/refinement-prefetch";
+import {
+  buildRefinementQuestionPrefetch,
+  selectNextPublicRefinementQuestion,
+} from "../src/lib/living/refinement-prefetch";
 import { PUBLIC_QUESTIONS } from "../src/lib/data/public-catalog";
 import type { Answer } from "../src/lib/scoring/types";
 import { buildClarityExplanation, traitDisplayDirection } from "../src/lib/scoring/result-copy";
@@ -264,6 +267,27 @@ describe("EraPrint scoring engine", () => {
       ]);
       expect(prefetched[choice.id]?.id ?? null).toBe(expected?.id ?? null);
     }
+  });
+
+  it("can select consecutive refinement questions locally without waiting for persistence", () => {
+    const answers: Answer[] = guardedAssertive.slice(0, 5);
+    while (answers.length < INITIAL_DECISIONS) {
+      const next = selectNextAdaptiveQuestion(answers)!;
+      answers.push({ questionId: next.id, choiceId: next.choices[0].id });
+    }
+
+    for (let index = 0; index < 5; index += 1) {
+      const localQuestion = selectNextPublicRefinementQuestion(answers);
+      const canonicalQuestion = selectNextAdaptiveQuestion(answers);
+      expect(localQuestion?.id).toBe(canonicalQuestion?.id);
+      expect(localQuestion).not.toBeNull();
+      answers.push({
+        questionId: localQuestion!.id,
+        choiceId: localQuestion!.choices[0].id,
+      });
+    }
+
+    expect(validateLivingEraPrintAnswers(answers.slice(0, 13), answers.slice(13))).toEqual([]);
   });
 
   it("resumes a long refinement from persisted answers deterministically", () => {

@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { flushSync } from "react-dom";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { PublicQuestion } from "@/lib/data/public-catalog";
+import { selectNextPublicRefinementQuestion } from "@/lib/living/refinement-prefetch";
+import type { Answer } from "@/lib/scoring/types";
 import {
   completeRefinement,
   fetchLivingState,
@@ -18,7 +19,11 @@ export function RefineClient({ snapshotId }: { snapshotId: string }) {
   const [session, setSession] = useState<RefinementSessionState | null>(null);
   const [question, setQuestion] = useState<PublicQuestion | null>(null);
   const [loading, setLoading] = useState(true);
+  const [savingCount, setSavingCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const answersRef = useRef<Answer[]>([]);
+  const saveQueueRef = useRef<Promise<void>>(Promise.resolve());
+  const saveFailedRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -40,6 +45,7 @@ export function RefineClient({ snapshotId }: { snapshotId: string }) {
         if (cancelled) return;
         setSession(nextSession);
         setQuestion(nextSession.question);
+        answersRef.current = nextSession.cumulativeAnswers;
         if (nextSession.shouldFinalize) await finalize(nextSession.sessionId);
         else if (!nextSession.question)
           throw new Error("No unused refinement question is available.");
@@ -92,81 +98,79 @@ export function RefineClient({ snapshotId }: { snapshotId: string }) {
     };
   }, [router, snapshotId]);
 
-  async function choose(choiceId: string) {
-    if (!session || !question || loading) return;
-    const previousSession = session;
-    const previousQuestion = question;
-    const hasPrefetchedQuestion = Object.prototype.hasOwnProperty.call(
-      session.nextByChoice,
+  function choose(choiceId: string) {
+    if (!session || !question || loading || error) return;
+
+    const answeredQuestion = question;
+    const submitted: Answer = {
+      questionId: answeredQuestion.id,
       choiceId,
-    );
-    const prefetchedQuestion = session.nextByChoice[choiceId] ?? null;
-    if (hasPrefetchedQuestion) {
-      flushSync(() => {
-        setLoading(true);
-        setError(null);
-        setSession({
-          ...session,
-          sessionAnswerCount: session.sessionAnswerCount + 1,
-          question: prefetchedQuestion,
-          nextByChoice: {},
-        });
-        setQuestion(prefetchedQuestion);
-      });
-      await new Promise<void>((resolve) => {
-        window.requestAnimationFrame(() => resolve());
-      });
-    } else {
-      setLoading(true);
-      setError(null);
-    }
-    try {
+    };
+    const updatedAnswers = [...answersRef.current, submitted];
+    const nextQuestion = selectNextPublicRefinementQuestion(updatedAnswers);
+    answersRef.current = updatedAnswers;
+
+    if (!nextQuestion) setLoading(true);
+    setQuestion(nextQuestion);
+    setSession((current) => current ? {
+      ...current,
+      sessionAnswerCount: current.sessionAnswerCount + 1,
+      question: nextQuestion,
+      nextByChoice: {},
+    } : current);
+    setSavingCount((count) => count + 1);
+
+    const saveOperation = saveQueueRef.current.then(async () => {
       const saved = await saveRefinementAnswer(
         snapshotId,
         session.sessionId,
-        question.id,
+        answeredQuestion.id,
         choiceId,
       );
-      const updatedSession = {
-        ...session,
-        sessionAnswerCount: saved.sessionAnswerCount,
-        shouldFinalize: saved.shouldFinalize,
-        question: saved.question,
-        nextByChoice: saved.nextByChoice,
-      };
-      setSession(updatedSession);
-      setQuestion(saved.question);
-      if (saved.shouldFinalize) {
+      if (!nextQuestion && saved.shouldFinalize) {
+        setLoading(true);
         const completed = await completeRefinement(
           snapshotId,
           session.sessionId,
         );
         router.replace(`/result/${completed.snapshotId}`);
-      } else if (!saved.question) {
-        throw new Error("No unused refinement question is available.");
       }
-    } catch (caught) {
-      setSession(previousSession);
-      setQuestion(previousQuestion);
-      if (caught instanceof Error && caught.name === "NOT_LATEST_SNAPSHOT") {
-        try {
-          const livingState = await fetchLivingState(snapshotId);
-          if (livingState.latestSnapshotId) {
-            router.replace(`/result/${livingState.latestSnapshotId}`);
-            return;
+    });
+
+    saveQueueRef.current = saveOperation
+      .catch(async (caught) => {
+        saveFailedRef.current = true;
+        if (caught instanceof Error && caught.name === "NOT_LATEST_SNAPSHOT") {
+          try {
+            const livingState = await fetchLivingState(snapshotId);
+            if (livingState.latestSnapshotId) {
+              router.replace(`/result/${livingState.latestSnapshotId}`);
+              return;
+            }
+          } catch {
+            // Fall through to the original server error below.
           }
-        } catch {
-          // Fall through to the original server error below.
         }
-      }
-      setError(
-        caught instanceof Error
-          ? caught.message
-          : "Unable to continue refinement.",
-      );
-    } finally {
+        setError(
+          caught instanceof Error
+            ? caught.message
+            : "Unable to save your refinement.",
+        );
+      })
+      .finally(() => {
+        setSavingCount((count) => Math.max(0, count - 1));
+      });
+  }
+
+  async function finishLater() {
+    if (loading) return;
+    setLoading(true);
+    await saveQueueRef.current;
+    if (saveFailedRef.current) {
       setLoading(false);
+      return;
     }
+    router.push(`/result/${snapshotId}`);
   }
 
   if (loading && !question) {
@@ -267,7 +271,7 @@ export function RefineClient({ snapshotId }: { snapshotId: string }) {
                 className="choice-card"
                 type="button"
                 key={choice.id}
-                disabled={loading}
+                disabled={loading || Boolean(error)}
                 onClick={() => choose(choice.id)}
               >
                 <span>{choice.label}</span>
@@ -281,11 +285,19 @@ export function RefineClient({ snapshotId }: { snapshotId: string }) {
                 Saving your choice…
               </span>
             ) : (
-              <Link className="refine-exit-link" href={`/result/${snapshotId}`}>
+              <button
+                className="refine-exit-link"
+                type="button"
+                onClick={finishLater}
+              >
                 Finish later
-              </Link>
+              </button>
             )}
-            <small>Your progress is saved automatically.</small>
+            <small>
+              {savingCount > 0
+                ? "Saving in the background…"
+                : "Your progress is saved automatically."}
+            </small>
           </div>
         </div>
       </section>

@@ -89,6 +89,7 @@ export async function POST(request: Request, context: { params: Promise<{ snapsh
       shouldFinalize: progress.catalogExhausted,
       question,
       nextByChoice,
+      cumulativeAnswers: [...owned.answers, ...sessionAnswers],
     });
   } catch (error) {
     return refinementErrorResponse(error, "Unable to start refinement.");
