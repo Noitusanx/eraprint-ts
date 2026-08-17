@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { getOwnedSnapshotContext } from "../src/lib/living/living-server";
+import { assertCurrentRefinementVersion, getOwnedSnapshotContext } from "../src/lib/living/living-server";
 import { RefinementError, refinementErrorResponse } from "../src/lib/living/refinement-errors";
 
 function fakeSupabase(ownerId: string, currentUserId: string) {
@@ -82,5 +82,16 @@ describe("Living EraPrint ownership", () => {
       error: "You have answered every choice available right now.",
       code: "CATALOG_EXHAUSTED",
     });
+  });
+
+  it("keeps historical scoring versions viewable but out of current refinement", () => {
+    expect(() => assertCurrentRefinementVersion({
+      catalog_version: "v1.0.0",
+      scoring_version: "v1.0.0",
+    })).toThrowError(expect.objectContaining({ code: "INCOMPATIBLE_SCORING_VERSION" }));
+    expect(() => assertCurrentRefinementVersion({
+      catalog_version: "v1.1.0",
+      scoring_version: "v1.1.0",
+    })).not.toThrow();
   });
 });

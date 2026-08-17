@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import type { ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { PUBLIC_TRAITS } from "@/lib/data/public-catalog";
 import {
@@ -36,6 +37,7 @@ export type ResultDisplayProps = {
   backToMatchId?: string;
   backToCircleResultId?: string;
   backToCircleLobbyId?: string;
+  pilotFeedback?: ReactNode;
 };
 
 function EraBar({
@@ -67,6 +69,7 @@ export function ResultDisplay({
   backToMatchId,
   backToCircleResultId,
   backToCircleLobbyId,
+  pilotFeedback,
 }: ResultDisplayProps) {
   const router = useRouter();
   const [copied, setCopied] = useState(false);
@@ -446,7 +449,9 @@ export function ResultDisplay({
           />
         )}
 
-        <section className="share-panel">
+        {pilotFeedback}
+
+        {!pilotFeedback && <section className="share-panel">
           <div>
             <p className="eyebrow">SHARE YOUR ERAPRINT</p>
 
@@ -480,7 +485,7 @@ export function ResultDisplay({
               {copied ? "Result copied" : "Copy result text"}
             </button>
           </div>
-        </section>
+        </section>}
 
         {shareSource.type === "snapshot" && (
           <section className="explore-together">
@@ -571,7 +576,7 @@ export function ResultDisplay({
           </section>
         )}
 
-        <footer className="result-footer">
+        {!pilotFeedback && <footer className="result-footer">
           {persistence !== undefined && (
             <div>
               <strong>Your result</strong>
@@ -591,7 +596,7 @@ export function ResultDisplay({
           <Link className="text-link" href="/play">
             Retake EraPrint →
           </Link>
-        </footer>
+        </footer>}
       </section>
     </main>
   );

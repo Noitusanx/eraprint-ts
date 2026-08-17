@@ -1,7 +1,9 @@
 import { ANCHOR_QUESTION_IDS, ERAS, QUESTIONS, SCORING_VERSION, TRAITS } from "../data/catalog";
-import { TRAIT_CODES, type Answer, type EraBlendItem, type EraPrintResult, type QuestionDefinition, type TraitCode, type TraitScore } from "./types";
+import { ERA_HIDDEN_PROFILES, HIDDEN_CHOICE_EFFECTS, HIDDEN_ERA_WEIGHT } from "./hidden-era-model";
+import { HIDDEN_ERA_CODES, TRAIT_CODES, type Answer, type EraBlendItem, type EraPrintResult, type HiddenEraCode, type HiddenEraScore, type QuestionDefinition, type TraitCode, type TraitScore } from "./types";
 
 export const PRIOR_WEIGHT = 3;
+export const HIDDEN_PRIOR_WEIGHT = 4;
 export const ERA_TEMPERATURE = 0.008;
 export const INITIAL_DECISIONS = 13;
 export const ANCHOR_DECISIONS = ANCHOR_QUESTION_IDS.length;
@@ -65,8 +67,38 @@ export function calculateTraitScores(answers: Answer[]): Record<TraitCode, Trait
   ) as Record<TraitCode, TraitScore>;
 }
 
+export function calculateHiddenEraScores(answers: Answer[]): Record<HiddenEraCode, HiddenEraScore> {
+  const totals = Object.fromEntries(
+    HIDDEN_ERA_CODES.map((code) => [code, { totalEffect: 0, evidenceCount: 0 }]),
+  ) as Record<HiddenEraCode, { totalEffect: number; evidenceCount: number }>;
+
+  for (const answer of answers) {
+    const { choice } = findChoice(answer);
+    for (const [rawCode, effect] of Object.entries(HIDDEN_CHOICE_EFFECTS[choice.id] ?? {})) {
+      const code = rawCode as HiddenEraCode;
+      if (!effect) continue;
+      totals[code].totalEffect += effect;
+      totals[code].evidenceCount += 1;
+    }
+  }
+
+  return Object.fromEntries(HIDDEN_ERA_CODES.map((code) => {
+    const { totalEffect, evidenceCount } = totals[code];
+    const reliability = evidenceCount / (evidenceCount + HIDDEN_PRIOR_WEIGHT);
+    return [code, {
+      code,
+      score: round1(clamp(50 + (25 * totalEffect) / (evidenceCount + HIDDEN_PRIOR_WEIGHT), 0, 100)),
+      evidenceCount,
+      totalEffect,
+      reliability: round2(reliability),
+    }];
+  })) as Record<HiddenEraCode, HiddenEraScore>;
+}
+
 export function calculateEraBlend(
   traitScores: Record<TraitCode, TraitScore>,
+  hiddenScores?: Record<HiddenEraCode, HiddenEraScore>,
+  hiddenWeight = HIDDEN_ERA_WEIGHT,
 ): EraBlendItem[] {
   const weightedDistances = ERAS.map((era) => {
     let numerator = 0;
@@ -84,7 +116,22 @@ export function calculateEraBlend(
       denominator += trait.reliability;
     }
 
-    const distance = denominator === 0 ? 0.25 : numerator / denominator;
+    const personalityDistance = denominator === 0 ? 0.25 : numerator / denominator;
+    let hiddenNumerator = 0;
+    let hiddenDenominator = 0;
+    if (hiddenScores) {
+      for (const code of HIDDEN_ERA_CODES) {
+        const signal = hiddenScores[code];
+        if (signal.reliability <= 0) continue;
+        const target = ERA_HIDDEN_PROFILES[era.code][code];
+        const adjustedTarget = 50 + signal.reliability * (target - 50);
+        hiddenNumerator += signal.reliability * ((signal.score - adjustedTarget) / 100) ** 2;
+        hiddenDenominator += signal.reliability;
+      }
+    }
+    const hiddenDistance = hiddenDenominator === 0 ? personalityDistance : hiddenNumerator / hiddenDenominator;
+    const effectiveHiddenWeight = hiddenDenominator === 0 ? 0 : hiddenWeight;
+    const distance = (1 - effectiveHiddenWeight) * personalityDistance + effectiveHiddenWeight * hiddenDistance;
     const affinity = Math.exp(-distance / ERA_TEMPERATURE);
 
     return {
@@ -222,10 +269,7 @@ function variance(values: number[]): number {
   return values.reduce((sum, value) => sum + (value - mean) ** 2, 0) / values.length;
 }
 
-export function rankAdaptiveQuestions(
-  answers: Answer[],
-  limit = 3,
-): QuestionDefinition[] {
+function rankQuestions(answers: Answer[], limit = 3): QuestionDefinition[] {
   const answeredIds = new Set(answers.map((answer) => answer.questionId));
   const traits = calculateTraitScores(answers);
   const eraBlend = calculateEraBlend(traits);
@@ -245,7 +289,6 @@ export function rankAdaptiveQuestions(
         const informationDeficit = 1 - traits[code].reliability;
         score += coverageStrength * (eraVariance / 625) * (0.55 + informationDeficit);
       }
-
       const categoryAlreadySeen = answers.some((answer) => {
         const previousQuestion = QUESTIONS.find((item) => item.id === answer.questionId);
         return previousQuestion?.category === question.category;
@@ -260,6 +303,17 @@ export function rankAdaptiveQuestions(
     .map((item) => item.question);
 }
 
+export function rankAdaptiveQuestions(answers: Answer[], limit = 3): QuestionDefinition[] {
+  return rankQuestions(answers, limit);
+}
+
+export function rankHiddenAdaptiveQuestions(answers: Answer[], limit = 3): QuestionDefinition[] {
+  // Hidden evidence must never steer which question a user sees. Coverage is
+  // supplied by the instrument; selection stays on the established public
+  // personality ranking so it cannot favor an Era identity.
+  return rankAdaptiveQuestions(answers, limit);
+}
+
 export function selectNextAdaptiveQuestion(
   answers: Answer[],
 ): QuestionDefinition | null {
@@ -272,6 +326,16 @@ export function selectNextAdaptiveQuestion(
   const index = stableHash(seed) % candidates.length;
 
   return candidates[index];
+}
+
+export function selectNextHiddenAdaptiveQuestion(answers: Answer[]): QuestionDefinition | null {
+  if (answers.length === ANCHOR_DECISIONS && !answers.some((answer) => answer.questionId === "Q18")) {
+    return QUESTIONS.find((question) => question.id === "Q18") ?? null;
+  }
+  const candidates = rankHiddenAdaptiveQuestions(answers, 3);
+  if (candidates.length === 0) return null;
+  const seed = answers.map((answer) => `${answer.questionId}:${answer.choiceId}`).join("|");
+  return candidates[stableHash(seed) % candidates.length];
 }
 
 

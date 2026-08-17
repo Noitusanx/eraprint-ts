@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getOwnedSnapshotContext } from "@/lib/living/living-server";
+import { assertCurrentRefinementVersion, getOwnedSnapshotContext } from "@/lib/living/living-server";
 import { buildRefinedEraPrint } from "@/lib/living/refinement-result";
 import { RefinementError, refinementErrorResponse } from "@/lib/living/refinement-errors";
 import { selectNextAdaptiveQuestion, validateLivingEraPrintAnswers } from "@/lib/scoring/scoring-engine";
@@ -38,6 +38,7 @@ export async function POST(request: Request, context: { params: Promise<{ snapsh
     }
 
     const owned = await getOwnedSnapshotContext(supabase, snapshotId);
+    assertCurrentRefinementVersion(owned.snapshot);
     if (!owned.isLatest) {
       throw new RefinementError("NOT_LATEST_SNAPSHOT", "Refinement must update your latest EraPrint.", 409);
     }

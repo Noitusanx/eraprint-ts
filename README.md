@@ -239,6 +239,30 @@ npm install
 npm run dev
 ```
 
+## Private hidden-model pilot
+
+The temporary `/pilot` route is isolated from `/play`, production snapshots, EraMatch, Circle, and refinement. Configure these server-side values in `.env.local` and in Vercel:
+
+```text
+ERAPRINT_PILOT_ENABLED=true
+ERAPRINT_PILOT_CODE=your-private-code
+SUPABASE_SERVICE_ROLE_KEY=your-server-only-supabase-service-role-key
+```
+
+The code and service-role key must never use a `NEXT_PUBLIC_` prefix. Apply the latest Supabase migration before testing. Remove the flag or set it to `false` to return a not-found response from `/pilot`.
+
+Run one synthetic persona (exactly 13 answers in the deterministic pilot order):
+
+```bash
+npm run pilot:hidden-model < answers.json
+```
+
+View the internal aggregate report locally:
+
+```bash
+npm run pilot:summary
+```
+
 Open `http://localhost:3000`.
 
 ### Demo mode

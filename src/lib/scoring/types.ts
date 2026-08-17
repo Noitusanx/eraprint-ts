@@ -1,6 +1,9 @@
 export const TRAIT_CODES = ["ROM","EMO","NOS","AUT","REF","ESC","SOC","GRD"] as const;
 export type TraitCode = (typeof TRAIT_CODES)[number];
 
+export const HIDDEN_ERA_CODES = ["NAR", "PRO", "STG", "PRF"] as const;
+export type HiddenEraCode = (typeof HIDDEN_ERA_CODES)[number];
+
 export type QuestionType =
   | "SCENARIO"
   | "THIS_OR_THAT"
@@ -17,6 +20,14 @@ export interface EraDefinition {
   code: string;
   name: string;
   profile: Record<TraitCode, number>;
+}
+
+export interface HiddenEraScore {
+  code: HiddenEraCode;
+  score: number;
+  evidenceCount: number;
+  totalEffect: number;
+  reliability: number;
 }
 
 export interface ChoiceDefinition {

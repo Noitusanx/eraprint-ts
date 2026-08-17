@@ -1,0 +1,3 @@
+import { NextResponse } from "next/server";
+import { createPilotSession, isPilotEnabled, PILOT_COOKIE, validatePilotCode } from "@/lib/pilot/access";
+export async function POST(request:Request){if(!isPilotEnabled())return NextResponse.json({error:"Pilot unavailable."},{status:404});let code="";try{code=String(((await request.json()) as {code?:string}).code??"");}catch{}if(!validatePilotCode(code))return NextResponse.json({error:"Access code not accepted."},{status:401});const session=createPilotSession();const response=NextResponse.json({ok:true});response.cookies.set(PILOT_COOKIE,session.value,{httpOnly:true,secure:process.env.NODE_ENV==="production",sameSite:"strict",path:"/",maxAge:session.maxAge});return response;}

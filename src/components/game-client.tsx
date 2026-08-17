@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -10,7 +10,7 @@ import {
   type PublicChoice,
   type PublicQuestion,
 } from "@/lib/data/public-catalog";
-import { selectNextPublicAdaptiveQuestion } from "@/lib/scoring/public-adaptive";
+import type { RefinementQuestionTree } from "@/lib/living/refinement-prefetch";
 import type { Answer } from "@/lib/scoring/types";
 
 const STORAGE_KEY = "eraprint:lastSession";
@@ -75,12 +75,40 @@ export function GameClient() {
   const [answers, setAnswers] = useState<Answer[]>([]);
   const [advancing, setAdvancing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [adaptiveTree, setAdaptiveTree] = useState<RefinementQuestionTree>({});
   const choosingRef = useRef(false);
+  const answersRef = useRef<Answer[]>([]);
 
   const currentQuestionId = questionIds[answers.length];
   const currentQuestion: PublicQuestion | undefined = PUBLIC_QUESTIONS.find(
     (question) => question.id === currentQuestionId,
   );
+
+  useEffect(() => {
+    if (answers.length < 2 || answers.length >= PUBLIC_INITIAL_DECISIONS) return;
+    const signature = answers.map((answer) => `${answer.questionId}:${answer.choiceId}`).join("|");
+    async function prefetchAdaptivePath() {
+      try {
+        const response = await fetch("/api/game/next", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ answers }),
+        });
+        const body = await response.json() as {
+          nextByChoice?: RefinementQuestionTree;
+          error?: string;
+        };
+        if (!response.ok) throw new Error(body.error ?? "Unable to prepare adaptive choices.");
+        const currentSignature = answersRef.current
+          .map((answer) => `${answer.questionId}:${answer.choiceId}`)
+          .join("|");
+        if (currentSignature === signature) setAdaptiveTree(body.nextByChoice ?? {});
+      } catch {
+        // Final result validation remains authoritative; a later prefetch can retry.
+      }
+    }
+    void prefetchAdaptivePath();
+  }, [answers]);
 
   const choose = (choiceId: string) => {
     if (!currentQuestion || advancing || choosingRef.current) return;
@@ -93,6 +121,7 @@ export function GameClient() {
       ...answers,
       { questionId: currentQuestion.id, choiceId },
     ];
+    answersRef.current = nextAnswers;
 
     try {
       if (nextAnswers.length >= PUBLIC_INITIAL_DECISIONS) {
@@ -106,10 +135,11 @@ export function GameClient() {
       }
 
       if (nextAnswers.length >= PUBLIC_ANCHOR_QUESTION_IDS.length) {
-        const nextQuestionId = selectNextPublicAdaptiveQuestion(nextAnswers)?.id;
+        const branch = adaptiveTree[choiceId];
+        const nextQuestionId = branch?.question?.id;
 
         if (!nextQuestionId) {
-          throw new Error("No adaptive question was available.");
+          throw new Error("Your next adaptive choice is still being prepared.");
         }
 
         setQuestionIds((current) =>
@@ -117,6 +147,9 @@ export function GameClient() {
             ? current
             : [...current, nextQuestionId],
         );
+        setAdaptiveTree(branch.nextByChoice);
+      } else if (adaptiveTree[choiceId]) {
+        setAdaptiveTree(adaptiveTree[choiceId].nextByChoice);
       }
 
       setAnswers(nextAnswers);
@@ -185,7 +218,11 @@ export function GameClient() {
                 key={choice.id}
                 choice={choice}
                 visual={currentQuestion.type === "VISUAL_PICK"}
-                disabled={advancing}
+                disabled={
+                  advancing ||
+                  (answers.length >= PUBLIC_ANCHOR_QUESTION_IDS.length - 1 &&
+                    !adaptiveTree[choice.id])
+                }
                 onSelect={() => choose(choice.id)}
               />
             ))}

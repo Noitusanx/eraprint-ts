@@ -93,7 +93,9 @@ export function LivingResultPanel({ snapshotId, result }: { snapshotId: string; 
             <p className="living-answer-count">
               You&apos;ve answered {state.activeRefinement?.answeredCount ?? state.answerCount} choices.
             </p>
-            {state.remainingCount === 0
+            {!state.compatible
+              ? <p>This historical EraPrint uses an earlier scoring version. It remains available to view and share.</p>
+              : state.remainingCount === 0
               ? <p>You&apos;ve answered every choice available right now.</p>
               : state.activeRefinement
                 ? <p>Your refinement is already in progress.</p>
@@ -111,7 +113,7 @@ export function LivingResultPanel({ snapshotId, result }: { snapshotId: string; 
             )}
           </div>
         )}
-        {state.isLatest && state.activeRefinement && (
+        {state.compatible && state.isLatest && state.activeRefinement && (
           <div className="living-refine-actions">
             <div className="living-refine-option">
               <strong>Continue your refinement</strong>
@@ -124,7 +126,7 @@ export function LivingResultPanel({ snapshotId, result }: { snapshotId: string; 
             </div>
           </div>
         )}
-        {state.isLatest && !state.activeRefinement && state.remainingCount > 0 && (
+        {state.compatible && state.isLatest && !state.activeRefinement && state.remainingCount > 0 && (
           <div className="living-refine-actions">
             <div className="living-refine-option living-refine-option-primary">
               <Link className="primary-button" href={`/refine/${snapshotId}`}>Refine your EraPrint</Link>

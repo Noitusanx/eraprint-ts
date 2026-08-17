@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { QUESTIONS } from "@/lib/data/catalog";
+import { CATALOG_VERSION, QUESTIONS, SCORING_VERSION } from "@/lib/data/catalog";
 import { getOwnedSnapshotContext } from "@/lib/living/living-server";
 import { refinementErrorResponse } from "@/lib/living/refinement-errors";
 import { getAuthenticatedSupabase } from "@/lib/supabase/authenticated-server";
@@ -9,6 +9,9 @@ export async function GET(request: Request, context: { params: Promise<{ snapsho
     const { snapshotId } = await context.params;
     const supabase = await getAuthenticatedSupabase(request);
     const owned = await getOwnedSnapshotContext(supabase, snapshotId);
+    const compatible =
+      owned.snapshot.catalog_version === CATALOG_VERSION &&
+      owned.snapshot.scoring_version === SCORING_VERSION;
     const remainingCount = QUESTIONS.length - new Set(owned.answers.map((a) => a.questionId)).size;
 
     const activeResponse = await supabase.from("game_sessions")
@@ -53,7 +56,8 @@ export async function GET(request: Request, context: { params: Promise<{ snapsho
       latestSnapshotId: owned.latestSnapshotId,
       answerCount: owned.answers.length,
       remainingCount,
-      canRefine: owned.isLatest && remainingCount > 0,
+      compatible,
+      canRefine: compatible && owned.isLatest && remainingCount > 0,
       activeRefinement: activeResponse.data ? {
         sessionId: activeResponse.data.id,
         answeredCount: owned.answers.length + activeAnswerCount,

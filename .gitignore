@@ -8,3 +8,9 @@ dist-check
 .env.*.local
 .DS_Store
 *.log
+
+tsconfig.tsbuildinfo
+
+eraprint-synthetic-personas-20.json
+synthetic-*.json
+hidden-*-diagnostic.json

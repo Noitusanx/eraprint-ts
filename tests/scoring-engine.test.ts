@@ -1,22 +1,31 @@
 import { describe, expect, it } from "vitest";
 import {
   calculateEraBlend,
+  calculateClarity,
+  calculateHiddenEraScores,
   calculateEraPrint,
   calculateTraitScores,
   INITIAL_DECISIONS,
   rankAdaptiveQuestions,
   selectNextAdaptiveQuestion,
+  selectNextHiddenAdaptiveQuestion,
   validateCatalog,
   validateInitialGameSequence,
   validateLivingEraPrintAnswers,
 } from "../src/lib/scoring/scoring-engine";
 import { buildRefinedEraPrint } from "../src/lib/living/refinement-result";
 import { buildRefinementProgress } from "../src/lib/living/refinement-session";
-import { buildRefinementQuestionPrefetch } from "../src/lib/living/refinement-prefetch";
-import { selectNextPublicAdaptiveQuestion } from "../src/lib/scoring/public-adaptive";
+import {
+  buildRefinementQuestionPrefetch,
+  buildRefinementQuestionTree,
+} from "../src/lib/living/refinement-prefetch";
 import { PUBLIC_QUESTIONS } from "../src/lib/data/public-catalog";
+import { CATALOG_VERSION, QUESTIONS, SCORING_VERSION, TRAITS } from "../src/lib/data/catalog";
 import type { Answer } from "../src/lib/scoring/types";
+import { HIDDEN_ERA_CODES } from "../src/lib/scoring/types";
+import { HIDDEN_CHOICE_EFFECTS } from "../src/lib/scoring/hidden-era-model";
 import { buildClarityExplanation, traitDisplayDirection } from "../src/lib/scoring/result-copy";
+import { auditCatalogBias } from "../src/lib/scoring/catalog-audit";
 
 const romanticSocial: Answer[] = [
   { questionId: "Q01", choiceId: "Q01_A" },
@@ -69,7 +78,7 @@ describe("EraPrint scoring engine", () => {
     expect(explanation).not.toContain("correctness");
   });
 
-  it("has a valid V1 catalog", () => {
+  it("has a valid catalog", () => {
     expect(validateCatalog()).toEqual([]);
   });
 
@@ -127,6 +136,105 @@ describe("EraPrint scoring engine", () => {
     const next = selectNextAdaptiveQuestion(firstFive);
     expect(next).not.toBeNull();
     expect(answered.has(next!.id)).toBe(false);
+  });
+
+  it("gives every trait meaningful positive and negative catalog paths", () => {
+    for (const trait of TRAITS) {
+      const effects = QUESTIONS.flatMap((question) =>
+        question.choices.map((choice) => choice.effects[trait.code] ?? 0),
+      );
+      expect(effects.some((effect) => effect > 0), `${trait.code} positive`).toBe(true);
+      expect(effects.some((effect) => effect < 0), `${trait.code} negative`).toBe(true);
+    }
+  });
+
+  it("keeps Self-Assertion and Imagination from becoming positive-only", () => {
+    const audit = auditCatalogBias({ runs: 40, seed: 13 });
+    expect(audit.effects.AUT.negative).toBeGreaterThan(0);
+    expect(audit.effects.ESC.negative).toBeGreaterThan(0);
+    expect(audit.effects.AUT.bidirectionalQuestions).toBeGreaterThan(0);
+    expect(audit.effects.ESC.bidirectionalQuestions).toBeGreaterThan(0);
+  });
+
+  it("produces reproducible seeded catalog simulations", () => {
+    expect(auditCatalogBias({ runs: 40, seed: 1989 })).toEqual(
+      auditCatalogBias({ runs: 40, seed: 1989 }),
+    );
+  });
+
+  it("keeps hidden effects out of the public question catalog", () => {
+    expect(PUBLIC_QUESTIONS).toHaveLength(QUESTIONS.length);
+    for (const publicQuestion of PUBLIC_QUESTIONS) {
+      const source = QUESTIONS.find((question) => question.id === publicQuestion.id);
+      expect(source).toBeDefined();
+      expect(publicQuestion).toMatchObject({
+        id: source!.id,
+        type: source!.type,
+        category: source!.category,
+        prompt: source!.prompt,
+      });
+      expect(publicQuestion.choices).toEqual(
+        source!.choices.map(({ id, label, hint }) => ({
+          id,
+          label,
+          ...(hint ? { hint } : {}),
+        })),
+      );
+      expect(publicQuestion.choices.every((choice) => !("effects" in choice))).toBe(true);
+    }
+    const serialized = JSON.stringify(PUBLIC_QUESTIONS);
+    expect(serialized).not.toContain("hiddenEffects");
+    for (const code of HIDDEN_ERA_CODES) expect(serialized).not.toContain(`\"${code}\"`);
+  });
+
+  it("gives every hidden Era dimension multiple positive and negative evidence opportunities", () => {
+    for (const code of HIDDEN_ERA_CODES) {
+      const questionIds = new Set<string>();
+      const effects: number[] = [];
+      for (const question of QUESTIONS) for (const choice of question.choices) {
+        const effect = HIDDEN_CHOICE_EFFECTS[choice.id]?.[code];
+        if (effect) { effects.push(effect); questionIds.add(question.id); }
+      }
+      expect(questionIds.size, `${code} questions`).toBeGreaterThanOrEqual(5);
+      expect(effects.some((effect) => effect > 0), `${code} positive`).toBe(true);
+      expect(effects.some((effect) => effect < 0), `${code} negative`).toBe(true);
+    }
+  });
+
+  it("shrinks hidden evidence so no single answer dominates", () => {
+    for (const choiceId of Object.keys(HIDDEN_CHOICE_EFFECTS)) {
+      const question = QUESTIONS.find((item) => item.choices.some((choice) => choice.id === choiceId));
+      if (!question) continue; // Experimental question variants are exercised by diagnostic scripts.
+      const scores = calculateHiddenEraScores([{ questionId: question.id, choiceId }]);
+      for (const code of HIDDEN_ERA_CODES) {
+        expect(Math.abs(scores[code].score - 50)).toBeLessThanOrEqual(10);
+      }
+    }
+  });
+
+  it("collects a second independent PRF observation without hidden-aware ranking", () => {
+    const anchors = guardedAssertive.slice(0, 5);
+    expect(selectNextHiddenAdaptiveQuestion(anchors)?.id).toBe("Q18");
+    const afterMeasurement = [...anchors, { questionId: "Q18", choiceId: "Q18_C" }];
+    expect(selectNextHiddenAdaptiveQuestion(afterMeasurement)?.id).toBe(
+      selectNextAdaptiveQuestion(afterMeasurement)?.id,
+    );
+    expect(HIDDEN_CHOICE_EFFECTS.Q03_A.PRF).toBeLessThan(0);
+    expect(HIDDEN_CHOICE_EFFECTS.Q03_D.PRF).toBeGreaterThan(0);
+    expect(HIDDEN_CHOICE_EFFECTS.Q18_A.PRF).toBeLessThan(0);
+    expect(HIDDEN_CHOICE_EFFECTS.Q18_C.PRF).toBeGreaterThan(0);
+  });
+
+  it("keeps Clarity based only on the eight public personality signals", () => {
+    const publicScores = calculateTraitScores(romanticSocial);
+    expect(calculateEraPrint(romanticSocial).clarity).toBe(calculateClarity(publicScores));
+    expect(Object.keys(calculateEraPrint(romanticSocial).traitScores)).toEqual([...TRAITS.map((trait) => trait.code)]);
+  });
+
+  it("marks recalculated results with the rebalanced catalog version", () => {
+    expect(CATALOG_VERSION).toBe("v1.1.0");
+    expect(SCORING_VERSION).toBe("v1.1.0");
+    expect(calculateEraPrint(romanticSocial).scoringVersion).toBe(SCORING_VERSION);
   });
 
 
@@ -193,8 +301,12 @@ describe("EraPrint scoring engine", () => {
       initial.push({ questionId: next.id, choiceId: next.choices[0].id });
     }
     expect(validateLivingEraPrintAnswers(initial, [initial[0]]).length).toBeGreaterThan(0);
+    const expected = selectNextAdaptiveQuestion(initial)!;
+    const manipulated = QUESTIONS.find((question) =>
+      !initial.some((answer) => answer.questionId === question.id) && question.id !== expected.id,
+    )!;
     expect(validateLivingEraPrintAnswers(initial, [
-      { questionId: "Q02", choiceId: "Q02_A" },
+      { questionId: manipulated.id, choiceId: manipulated.choices[0].id },
     ]).length).toBeGreaterThan(0);
   });
 
@@ -267,25 +379,29 @@ describe("EraPrint scoring engine", () => {
     }
   });
 
-  it("can select consecutive refinement questions locally without waiting for persistence", () => {
-    const answers: Answer[] = guardedAssertive.slice(0, 5);
-    while (answers.length < INITIAL_DECISIONS) {
-      const next = selectNextAdaptiveQuestion(answers)!;
-      answers.push({ questionId: next.id, choiceId: next.choices[0].id });
+  it("prefetches consecutive public refinement branches without exposing effects", () => {
+    const initial: Answer[] = guardedAssertive.slice(0, 5);
+    while (initial.length < INITIAL_DECISIONS) {
+      const next = selectNextAdaptiveQuestion(initial)!;
+      initial.push({ questionId: next.id, choiceId: next.choices[0].id });
     }
+    const current = selectNextAdaptiveQuestion(initial)!;
+    const publicCurrent = PUBLIC_QUESTIONS.find((question) => question.id === current.id)!;
+    let tree = buildRefinementQuestionTree(initial, [], publicCurrent);
+    let question = publicCurrent;
+    const refinement: Answer[] = [];
 
-    for (let index = 0; index < 5; index += 1) {
-      const localQuestion = selectNextPublicAdaptiveQuestion(answers);
-      const canonicalQuestion = selectNextAdaptiveQuestion(answers);
-      expect(localQuestion?.id).toBe(canonicalQuestion?.id);
-      expect(localQuestion).not.toBeNull();
-      answers.push({
-        questionId: localQuestion!.id,
-        choiceId: localQuestion!.choices[0].id,
-      });
+    for (let index = 0; index < 3; index += 1) {
+      expect(question).not.toBeNull();
+      const choice = question.choices[0];
+      const branch = tree[choice.id];
+      expect(branch).toBeDefined();
+      refinement.push({ questionId: question.id, choiceId: choice.id });
+      if (!branch.question && index < 2) throw new Error("Missing prefetched question.");
+      question = branch.question ?? question;
+      tree = branch.nextByChoice;
     }
-
-    expect(validateLivingEraPrintAnswers(answers.slice(0, 13), answers.slice(13))).toEqual([]);
+    expect(validateLivingEraPrintAnswers(initial, refinement)).toEqual([]);
   });
 
   it("resumes a long refinement from persisted answers deterministically", () => {

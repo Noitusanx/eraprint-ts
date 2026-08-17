@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { PUBLIC_QUESTIONS } from "@/lib/data/public-catalog";
-import { getOwnedSnapshotContext } from "@/lib/living/living-server";
+import { assertCurrentRefinementVersion, getOwnedSnapshotContext } from "@/lib/living/living-server";
 import { RefinementError, refinementErrorResponse } from "@/lib/living/refinement-errors";
 import { buildRefinementProgress } from "@/lib/living/refinement-session";
-import { buildRefinementQuestionPrefetch } from "@/lib/living/refinement-prefetch";
+import { buildRefinementQuestionTree } from "@/lib/living/refinement-prefetch";
 import { selectNextAdaptiveQuestion } from "@/lib/scoring/scoring-engine";
 import type { Answer } from "@/lib/scoring/types";
 import { getAuthenticatedSupabase } from "@/lib/supabase/authenticated-server";
@@ -13,6 +13,7 @@ export async function POST(request: Request, context: { params: Promise<{ snapsh
     const { snapshotId } = await context.params;
     const supabase = await getAuthenticatedSupabase(request);
     const owned = await getOwnedSnapshotContext(supabase, snapshotId);
+    assertCurrentRefinementVersion(owned.snapshot);
     if (!owned.isLatest) {
       throw new RefinementError(
         "NOT_LATEST_SNAPSHOT",
@@ -75,7 +76,7 @@ export async function POST(request: Request, context: { params: Promise<{ snapsh
       ? PUBLIC_QUESTIONS.find((item) => item.id === next.id) ?? null
       : null;
     if (next && !question) throw new Error("Public question data is missing.");
-    const nextByChoice = buildRefinementQuestionPrefetch(
+    const nextByChoice = buildRefinementQuestionTree(
       owned.answers,
       sessionAnswers,
       question,
@@ -89,7 +90,6 @@ export async function POST(request: Request, context: { params: Promise<{ snapsh
       shouldFinalize: progress.catalogExhausted,
       question,
       nextByChoice,
-      cumulativeAnswers: [...owned.answers, ...sessionAnswers],
     });
   } catch (error) {
     return refinementErrorResponse(error, "Unable to start refinement.");

@@ -4,8 +4,6 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { PublicQuestion } from "@/lib/data/public-catalog";
-import { selectNextPublicAdaptiveQuestion } from "@/lib/scoring/public-adaptive";
-import type { Answer } from "@/lib/scoring/types";
 import {
   completeRefinement,
   fetchLivingState,
@@ -21,7 +19,6 @@ export function RefineClient({ snapshotId }: { snapshotId: string }) {
   const [loading, setLoading] = useState(true);
   const [savingCount, setSavingCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  const answersRef = useRef<Answer[]>([]);
   const saveQueueRef = useRef<Promise<void>>(Promise.resolve());
   const saveFailedRef = useRef(false);
 
@@ -45,7 +42,6 @@ export function RefineClient({ snapshotId }: { snapshotId: string }) {
         if (cancelled) return;
         setSession(nextSession);
         setQuestion(nextSession.question);
-        answersRef.current = nextSession.cumulativeAnswers;
         if (nextSession.shouldFinalize) await finalize(nextSession.sessionId);
         else if (!nextSession.question)
           throw new Error("No unused refinement question is available.");
@@ -102,13 +98,9 @@ export function RefineClient({ snapshotId }: { snapshotId: string }) {
     if (!session || !question || loading || error) return;
 
     const answeredQuestion = question;
-    const submitted: Answer = {
-      questionId: answeredQuestion.id,
-      choiceId,
-    };
-    const updatedAnswers = [...answersRef.current, submitted];
-    const nextQuestion = selectNextPublicAdaptiveQuestion(updatedAnswers);
-    answersRef.current = updatedAnswers;
+    const branch = session.nextByChoice[choiceId];
+    if (!branch) return;
+    const nextQuestion = branch.question;
 
     if (!nextQuestion) setLoading(true);
     setQuestion(nextQuestion);
@@ -116,7 +108,7 @@ export function RefineClient({ snapshotId }: { snapshotId: string }) {
       ...current,
       sessionAnswerCount: current.sessionAnswerCount + 1,
       question: nextQuestion,
-      nextByChoice: {},
+      nextByChoice: branch.nextByChoice,
     } : current);
     setSavingCount((count) => count + 1);
 
@@ -127,6 +119,17 @@ export function RefineClient({ snapshotId }: { snapshotId: string }) {
         answeredQuestion.id,
         choiceId,
       );
+      setSession((current) => {
+        if (!current || current.sessionAnswerCount !== saved.sessionAnswerCount) {
+          return current;
+        }
+        return {
+          ...current,
+          shouldFinalize: saved.shouldFinalize,
+          question: saved.question,
+          nextByChoice: saved.nextByChoice,
+        };
+      });
       if (!nextQuestion && saved.shouldFinalize) {
         setLoading(true);
         const completed = await completeRefinement(
@@ -271,7 +274,11 @@ export function RefineClient({ snapshotId }: { snapshotId: string }) {
                 className="choice-card"
                 type="button"
                 key={choice.id}
-                disabled={loading || Boolean(error)}
+                disabled={
+                  loading ||
+                  Boolean(error) ||
+                  !session.nextByChoice[choice.id]
+                }
                 onClick={() => choose(choice.id)}
               >
                 <span>{choice.label}</span>

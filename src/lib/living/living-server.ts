@@ -1,6 +1,23 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Answer } from "@/lib/scoring/types";
+import { CATALOG_VERSION, SCORING_VERSION } from "../data/catalog";
+import type { Answer } from "../scoring/types";
 import { RefinementError } from "./refinement-errors";
+
+export function assertCurrentRefinementVersion(snapshot: {
+  catalog_version: string;
+  scoring_version: string;
+}) {
+  if (
+    snapshot.catalog_version !== CATALOG_VERSION ||
+    snapshot.scoring_version !== SCORING_VERSION
+  ) {
+    throw new RefinementError(
+      "INCOMPATIBLE_SCORING_VERSION",
+      "This EraPrint uses an earlier scoring version and remains available as a historical result.",
+      409,
+    );
+  }
+}
 
 export async function getOwnedSnapshotContext(
   supabase: SupabaseClient,

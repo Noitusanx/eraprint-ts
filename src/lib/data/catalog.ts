@@ -238,8 +238,8 @@ export const QUESTIONS: QuestionDefinition[] = [
         label: "Reply immediately.",
         effects: {
           ROM: 2,
-          EMO: 1,
           GRD: -2,
+          REF: -1,
         },
       },
       {
@@ -247,7 +247,6 @@ export const QUESTIONS: QuestionDefinition[] = [
         label: "Read it. No reply.",
         effects: {
           GRD: 2,
-          AUT: 1,
           ROM: -1,
         },
       },
@@ -265,8 +264,6 @@ export const QUESTIONS: QuestionDefinition[] = [
         label: "Screenshot it to the group chat.",
         effects: {
           SOC: 2,
-          EMO: 1,
-          AUT: 1,
         },
       },
     ],
@@ -290,7 +287,7 @@ export const QUESTIONS: QuestionDefinition[] = [
         label: "Reinvent myself completely.",
         effects: {
           AUT: 2,
-          NOS: -1,
+          NOS: -2,
         },
       },
       {
@@ -307,7 +304,6 @@ export const QUESTIONS: QuestionDefinition[] = [
         label: "Turn it into a story in my head.",
         effects: {
           ESC: 2,
-          EMO: 1,
         },
       },
     ],
@@ -353,7 +349,6 @@ export const QUESTIONS: QuestionDefinition[] = [
         label: "A loud room with friends.",
         effects: {
           SOC: 2,
-          EMO: 1,
           REF: -1,
         },
         hint: "party",
@@ -373,6 +368,7 @@ export const QUESTIONS: QuestionDefinition[] = [
           AUT: 2,
           EMO: 1,
           GRD: -1,
+          REF: -1,
         },
       },
       {
@@ -405,26 +401,23 @@ export const QUESTIONS: QuestionDefinition[] = [
   },
   {
     id: "Q05",
-    type: "THIS_OR_THAT",
-    category: "Identity",
-    prompt: "Keep only one.",
+    type: "SCENARIO",
+    category: "Decision",
+    prompt: "A group plan is stuck between two options.",
     choices: [
       {
         id: "Q05_A",
-        label: "Being deeply understood.",
+        label: "Ask what works best for everyone.",
         effects: {
-          REF: 2,
-          ROM: 1,
-          GRD: -1,
+          AUT: -2,
+          SOC: 1,
         },
       },
       {
         id: "Q05_B",
-        label: "Being unforgettable.",
+        label: "Say which option I want.",
         effects: {
           AUT: 2,
-          SOC: 1,
-          EMO: 1,
         },
       },
     ],
@@ -439,7 +432,7 @@ export const QUESTIONS: QuestionDefinition[] = [
         id: "Q06_A",
         label: "Yes, if it still matters.",
         effects: {
-          ROM: 1,
+          ROM: 2,
           GRD: -1,
         },
       },
@@ -449,6 +442,7 @@ export const QUESTIONS: QuestionDefinition[] = [
         effects: {
           AUT: 1,
           GRD: 1,
+          ROM: -2,
         },
       },
     ],
@@ -470,8 +464,7 @@ export const QUESTIONS: QuestionDefinition[] = [
         id: "Q07_B",
         label: "I don't care much.",
         effects: {
-          NOS: -1,
-          AUT: 1,
+          NOS: -2,
         },
       },
     ],
@@ -487,7 +480,6 @@ export const QUESTIONS: QuestionDefinition[] = [
         label: "Feel everything.",
         effects: {
           EMO: 2,
-          ROM: 1,
           GRD: -1,
         },
       },
@@ -496,8 +488,7 @@ export const QUESTIONS: QuestionDefinition[] = [
         label: "Control everything.",
         effects: {
           GRD: 2,
-          AUT: 1,
-          EMO: -1,
+          EMO: -2,
         },
       },
     ],
@@ -522,6 +513,7 @@ export const QUESTIONS: QuestionDefinition[] = [
         effects: {
           SOC: 2,
           AUT: 1,
+          REF: -1,
         },
       },
       {
@@ -530,6 +522,7 @@ export const QUESTIONS: QuestionDefinition[] = [
         effects: {
           AUT: 2,
           SOC: -1,
+          REF: -1,
         },
       },
       {
@@ -560,7 +553,7 @@ export const QUESTIONS: QuestionDefinition[] = [
         id: "Q10_B",
         label: "Let them think what they want.",
         effects: {
-          AUT: 2,
+          AUT: -2,
           GRD: 1,
         },
       },
@@ -608,15 +601,15 @@ export const QUESTIONS: QuestionDefinition[] = [
         label: "Stories, places, and imagination.",
         effects: {
           ESC: 2,
-          AUT: 1,
         },
       },
       {
         id: "Q11_D",
-        label: "People, movement, and constant energy.",
+        label: "Real people, real plans, and constant energy.",
         effects: {
           SOC: 2,
-          EMO: 1,
+          REF: -2,
+          ESC: -2,
         },
       },
     ],
@@ -648,7 +641,6 @@ export const QUESTIONS: QuestionDefinition[] = [
         label: "Let it go.",
         effects: {
           NOS: -2,
-          AUT: 1,
         },
       },
       {
@@ -664,40 +656,39 @@ export const QUESTIONS: QuestionDefinition[] = [
   {
     id: "Q13",
     type: "SCENARIO",
-    category: "Social",
-    prompt: "Someone gives you a sincere compliment.",
+    category: "Decision",
+    prompt: "Friends ask what the group should do next.",
     choices: [
       {
         id: "Q13_A",
-        label: "Accept it.",
+        label: "Suggest what I actually want.",
         effects: {
-          AUT: 1,
-          SOC: 1,
+          AUT: 2,
           GRD: -1,
         },
       },
       {
         id: "Q13_B",
-        label: "Joke about it.",
+        label: "Ask what everyone feels like doing.",
         effects: {
           SOC: 1,
-          GRD: 1,
+          AUT: -2,
         },
       },
       {
         id: "Q13_C",
-        label: "Think about it later.",
+        label: "Offer two options and talk it through.",
         effects: {
-          REF: 2,
-          EMO: 1,
+          REF: 1,
+          AUT: -1,
         },
       },
       {
         id: "Q13_D",
-        label: "Compliment them back.",
+        label: "Go along with whatever sounds good.",
         effects: {
-          ROM: 1,
-          SOC: 2,
+          AUT: -2,
+          SOC: 1,
         },
       },
     ],
@@ -706,13 +697,14 @@ export const QUESTIONS: QuestionDefinition[] = [
     id: "Q14",
     type: "THIS_OR_THAT",
     category: "Decision",
-    prompt: "A big decision has no obvious answer.",
+    prompt: "A group decision has no obvious answer.",
     choices: [
       {
         id: "Q14_A",
-        label: "Think until it makes sense.",
+        label: "Talk until something works for everyone.",
         effects: {
-          REF: 2,
+          REF: 1,
+          AUT: -2,
         },
       },
       {
@@ -720,7 +712,7 @@ export const QUESTIONS: QuestionDefinition[] = [
         label: "Choose, then make it work.",
         effects: {
           AUT: 2,
-          REF: -1,
+          REF: -2,
         },
       },
     ],
@@ -743,16 +735,13 @@ export const QUESTIONS: QuestionDefinition[] = [
         id: "Q15_B",
         label: "Go somewhere completely new.",
         effects: {
-          AUT: 1,
-          ESC: 1,
-          NOS: -1,
+          NOS: -2,
         },
       },
       {
         id: "Q15_C",
         label: "A tiny town with no noise.",
         effects: {
-          ESC: 2,
           REF: 1,
           SOC: -1,
         },
@@ -787,6 +776,7 @@ export const QUESTIONS: QuestionDefinition[] = [
         effects: {
           AUT: 1,
           GRD: 2,
+          ROM: -2,
         },
       },
       {
@@ -844,6 +834,7 @@ export const QUESTIONS: QuestionDefinition[] = [
         effects: {
           SOC: 2,
           GRD: -1,
+          REF: -1,
         },
       },
       {
@@ -869,6 +860,7 @@ export const QUESTIONS: QuestionDefinition[] = [
         effects: {
           AUT: 2,
           SOC: 1,
+          REF: -1,
         },
       },
     ],
@@ -885,6 +877,7 @@ export const QUESTIONS: QuestionDefinition[] = [
         effects: {
           REF: 2,
           NOS: 1,
+          ESC: -2,
         },
       },
       {
@@ -909,6 +902,7 @@ export const QUESTIONS: QuestionDefinition[] = [
         effects: {
           EMO: 2,
           AUT: 1,
+          REF: -2,
         },
       },
       {
@@ -933,6 +927,7 @@ export const QUESTIONS: QuestionDefinition[] = [
         effects: {
           AUT: 2,
           GRD: 1,
+          ROM: -1,
         },
       },
     ],
@@ -957,6 +952,7 @@ export const QUESTIONS: QuestionDefinition[] = [
         effects: {
           AUT: 2,
           GRD: 1,
+          NOS: -2,
         },
       },
       {
@@ -964,7 +960,6 @@ export const QUESTIONS: QuestionDefinition[] = [
         label: "Feel all of it.",
         effects: {
           EMO: 2,
-          ROM: 1,
         },
       },
       {
@@ -972,8 +967,9 @@ export const QUESTIONS: QuestionDefinition[] = [
         label: "Keep busy.",
         effects: {
           SOC: 1,
-          AUT: 1,
           GRD: 1,
+          EMO: -2,
+          REF: -2,
         },
       },
     ],
@@ -994,11 +990,11 @@ export const QUESTIONS: QuestionDefinition[] = [
       },
       {
         id: "Q22_B",
-        label: "Messy, meaningful, unforgettable.",
+        label: "Honest, imperfect, and unresolved.",
         effects: {
-          EMO: 2,
+          ROM: -2,
+          EMO: 1,
           NOS: 1,
-          ESC: 1,
         },
       },
     ],
@@ -1006,25 +1002,23 @@ export const QUESTIONS: QuestionDefinition[] = [
   {
     id: "Q23",
     type: "THIS_OR_THAT",
-    category: "Truth",
-    prompt: "Which is harder to live with?",
+    category: "Imagination",
+    prompt: "A story leaves one detail unexplained.",
     choices: [
       {
         id: "Q23_A",
-        label: "A difficult truth.",
+        label: "I want the literal answer.",
         effects: {
           REF: 1,
-          AUT: 1,
-          GRD: -1,
+          ESC: -2,
         },
       },
       {
         id: "Q23_B",
-        label: "Not knowing the truth.",
+        label: "I like imagining what it could mean.",
         effects: {
-          REF: 2,
-          GRD: 1,
-          EMO: 1,
+          REF: 1,
+          ESC: 2,
         },
       },
     ],
@@ -1040,7 +1034,6 @@ export const QUESTIONS: QuestionDefinition[] = [
         label: "I'd go back.",
         effects: {
           NOS: 2,
-          ROM: 1,
         },
       },
       {
@@ -1048,33 +1041,30 @@ export const QUESTIONS: QuestionDefinition[] = [
         label: "I'd rather make somewhere new matter.",
         effects: {
           AUT: 2,
-          NOS: -1,
+          NOS: -2,
         },
       },
     ],
   },
   {
     id: "Q25",
-    type: "THIS_OR_THAT",
-    category: "Identity",
-    prompt: "More valuable?",
+    type: "SCENARIO",
+    category: "Decision",
+    prompt: "Friends cannot agree where to go.",
     choices: [
       {
         id: "Q25_A",
-        label: "Being recognized by many.",
+        label: "Suggest a compromise everyone can enjoy.",
         effects: {
-          SOC: 2,
-          AUT: 1,
+          AUT: -2,
+          SOC: 1,
         },
       },
       {
         id: "Q25_B",
-        label: "Being deeply known by a few.",
+        label: "Choose my favorite and make the case.",
         effects: {
-          REF: 1,
-          ROM: 1,
-          SOC: -1,
-          GRD: -1,
+          AUT: 2,
         },
       },
     ],
@@ -1090,7 +1080,9 @@ export const QUESTIONS: QuestionDefinition[] = [
         label: "Fix it immediately.",
         effects: {
           AUT: 2,
-          EMO: -1,
+          EMO: -2,
+          REF: -2,
+          ESC: -2,
         },
       },
       {
@@ -1106,6 +1098,7 @@ export const QUESTIONS: QuestionDefinition[] = [
         effects: {
           ESC: 1,
           AUT: 1,
+          REF: -1,
         },
       },
       {
@@ -1129,7 +1122,6 @@ export const QUESTIONS: QuestionDefinition[] = [
         label: "Soft light and handwritten thoughts.",
         effects: {
           REF: 2,
-          ROM: 1,
         },
         hint: "soft",
       },
@@ -1138,7 +1130,7 @@ export const QUESTIONS: QuestionDefinition[] = [
         label: "Neon and movement.",
         effects: {
           SOC: 2,
-          AUT: 1,
+          ESC: -1,
         },
         hint: "neon",
       },
@@ -1173,6 +1165,7 @@ export const QUESTIONS: QuestionDefinition[] = [
         effects: {
           AUT: 1,
           GRD: 2,
+          ESC: -2,
         },
       },
       {
@@ -1187,7 +1180,6 @@ export const QUESTIONS: QuestionDefinition[] = [
         id: "Q28_C",
         label: "Eventually send it.",
         effects: {
-          ROM: 1,
           AUT: 1,
           GRD: -2,
         },
@@ -1230,6 +1222,7 @@ export const QUESTIONS: QuestionDefinition[] = [
         effects: {
           SOC: 2,
           EMO: 1,
+          REF: -2,
         },
       },
       {
@@ -1259,15 +1252,14 @@ export const QUESTIONS: QuestionDefinition[] = [
       },
       {
         id: "Q30_B",
-        label: "They think I'm stronger than I feel.",
+        label: "They think I'm upset when I'm actually okay.",
         effects: {
-          EMO: 2,
-          GRD: 1,
+          EMO: -2,
         },
       },
       {
         id: "Q30_C",
-        label: "They think I'm less emotional than I am.",
+        label: "They think I'm fine when I'm feeling everything.",
         effects: {
           EMO: 2,
           GRD: 2,
@@ -1287,4 +1279,5 @@ export const QUESTIONS: QuestionDefinition[] = [
 
 export const ANCHOR_QUESTION_IDS = ["Q01", "Q03", "Q04", "Q11", "Q19"] as const;
 
-export const SCORING_VERSION = "v1.0.0";
+export const CATALOG_VERSION = "v1.1.0";
+export const SCORING_VERSION = "v1.1.0";

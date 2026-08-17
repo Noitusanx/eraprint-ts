@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { PUBLIC_QUESTIONS } from "@/lib/data/public-catalog";
-import { getOwnedSnapshotContext } from "@/lib/living/living-server";
+import { assertCurrentRefinementVersion, getOwnedSnapshotContext } from "@/lib/living/living-server";
 import { selectNextAdaptiveQuestion, validateLivingEraPrintAnswers } from "@/lib/scoring/scoring-engine";
 import type { Answer } from "@/lib/scoring/types";
 import { getAuthenticatedSupabase } from "@/lib/supabase/authenticated-server";
@@ -12,6 +12,7 @@ export async function POST(request: Request, context: { params: Promise<{ snapsh
     const refinementAnswers = body.answers ?? [];
     const supabase = await getAuthenticatedSupabase(request);
     const owned = await getOwnedSnapshotContext(supabase, snapshotId);
+    assertCurrentRefinementVersion(owned.snapshot);
     if (!owned.isLatest) throw new Error("Refinement must start from your latest EraPrint.");
     const errors = validateLivingEraPrintAnswers(owned.answers, refinementAnswers);
     if (errors.length) throw new Error(errors[0]);

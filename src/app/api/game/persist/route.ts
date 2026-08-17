@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import {
+  CATALOG_VERSION,
+} from "@/lib/data/catalog";
+import {
   calculateEraPrint,
   INITIAL_DECISIONS,
   validateInitialGameSequence,
@@ -139,7 +142,7 @@ export async function POST(request: Request) {
           profile_id: user.id,
           game_session_id: sessionId,
           answer_count: answers.length,
-          catalog_version: "v1.0.0",
+          catalog_version: CATALOG_VERSION,
           scoring_version: result.scoringVersion,
           primary_era_code: result.primaryEra.code,
           secondary_era_code: result.secondaryEra.code,
