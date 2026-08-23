@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { PUBLIC_TRAITS } from "@/lib/data/public-catalog";
 import { TraitScoreDisplay } from "./trait-score-display";
 import {
@@ -11,38 +11,61 @@ import {
 import { EraDynamicSection } from "@/components/era-dynamic-section";
 import type { PublicEraMatchResult } from "@/lib/match/types";
 import { UUID_PATTERN } from "@/lib/repositories/era-match-public-repository";
+import { getMatchViewerSide } from "@/lib/repositories/era-match-repository";
+import {
+  createShareCardFile,
+  downloadShareCard,
+  shareShareCard,
+} from "@/lib/share/share-card-client";
 
 export function MatchResultDisplay({
   result,
 }: {
   result: PublicEraMatchResult;
 }) {
-  const [copied, setCopied] = useState(false);
+  const [viewerSide, setViewerSide] = useState<"A" | "B" | null>(null);
+  const [linkCopied, setLinkCopied] = useState(false);
+  const [cardLoading, setCardLoading] = useState(false);
+  const [cardError, setCardError] = useState<string | null>(null);
   const hasProfileLinks =
     UUID_PATTERN.test(result.snapshotAId ?? "") &&
     UUID_PATTERN.test(result.snapshotBId ?? "");
 
-  const copyLink = async () => {
+  useEffect(() => {
+    getMatchViewerSide(result.matchId)
+      .then(setViewerSide)
+      .catch(() => setViewerSide(null));
+  }, [result.matchId]);
+
+  const matchCard = () =>
+    createShareCardFile(
+      "/api/share-card/match",
+      { kind: "match", matchId: result.matchId, viewerSide },
+      "eraprint-match.png",
+    );
+
+  const copyMatchLink = async () => {
     await navigator.clipboard.writeText(window.location.href);
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 1500);
+    setLinkCopied(true);
+    window.setTimeout(() => setLinkCopied(false), 1500);
   };
 
-  const share = async () => {
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: "Our EraMatch",
-          text: `${Math.round(result.matchScore)}% EraMatch: ${result.profileA.archetype} × ${result.profileB.archetype}`,
-          url: window.location.href,
-        });
-        return;
-      } catch (error) {
-        if (error instanceof DOMException && error.name === "AbortError")
-          return;
-      }
+  const withMatchCard = async (
+    action: (file: File) => Promise<unknown> | unknown,
+  ) => {
+    setCardLoading(true);
+    setCardError(null);
+    try {
+      await action(await matchCard());
+    } catch (error) {
+      setCardError(
+        error instanceof Error
+          ? error.message
+          : "Unable to generate EraMatch card.",
+      );
+    } finally {
+      setCardLoading(false);
     }
-    await copyLink();
   };
 
   return (
@@ -111,20 +134,42 @@ export function MatchResultDisplay({
         <section className="result-section match-profile-section">
           <div className="profile-pair">
             <article>
-              <span>PROFILE A</span>
+              <span>
+                {viewerSide === "A" ? "PROFILE A (YOU)" : "PROFILE A"}
+              </span>
               <strong>
                 {result.profileA.primaryEra.name} ×{" "}
                 {result.profileA.secondaryEra.name}
               </strong>
               <p>{result.profileA.archetype}</p>
+              {hasProfileLinks && viewerSide && (
+                <Link
+                  className="match-profile-link"
+                  href={`/result/${result.snapshotAId}?fromMatch=${result.matchId}`}
+                >
+                  {viewerSide === "A" ? "View My Profile" : "View Profile"}
+                </Link>
+              )}
             </article>
             <article>
-              <span>PROFILE B</span>
+              <span>
+                {viewerSide === "B" ? "PROFILE B (YOU)" : "PROFILE B"}
+              </span>
               <strong>
                 {result.profileB.primaryEra.name} ×{" "}
                 {result.profileB.secondaryEra.name}
               </strong>
               <p>{result.profileB.archetype}</p>
+              {hasProfileLinks && viewerSide && (
+                <Link
+                  className="match-profile-link"
+                  href={`/result/${result.snapshotBId}?fromMatch=${result.matchId}`}
+                >
+                  {viewerSide === "B"
+                    ? "View My Profile"
+                    : "View Their Profile"}
+                </Link>
+              )}
             </article>
           </div>
         </section>
@@ -142,11 +187,13 @@ export function MatchResultDisplay({
           >
             <span>
               <i className="profile-a-dot" />
-              Profile A · {result.profileA.archetype}
+              Profile A{viewerSide === "A" ? " (You)" : ""} ·{" "}
+              {result.profileA.archetype}
             </span>
             <span>
               <i className="profile-b-dot" />
-              Profile B · {result.profileB.archetype}
+              Profile B{viewerSide === "B" ? " (You)" : ""} ·{" "}
+              {result.profileB.archetype}
             </span>
           </div>
           <div className="match-trait-list">
@@ -177,52 +224,58 @@ export function MatchResultDisplay({
           <div className="shared-era-card">
             <strong>{result.sharedEra.name}</strong>
             <div className="shared-era-evidence">
-              <span>Profile A <strong>{result.sharedEra.percentageA.toFixed(1)}%</strong></span>
-              <span>Profile B <strong>{result.sharedEra.percentageB.toFixed(1)}%</strong></span>
+              <div>
+                <span>Profile A{viewerSide === "A" ? " (You)" : ""}</span>
+                <strong>{result.sharedEra.percentageA.toFixed(1)}%</strong>
+              </div>
+              <div>
+                <span>Profile B{viewerSide === "B" ? " (You)" : ""}</span>
+                <strong>{result.sharedEra.percentageB.toFixed(1)}%</strong>
+              </div>
             </div>
           </div>
-          <p className="fine-print">
-            EraMatch measures entertainment-profile similarity, not relationship
-            success or psychological compatibility.
-          </p>
         </section>
 
         <section className="share-panel">
           <div>
             <p className="eyebrow">SHARE ERAMATCH</p>
-            <h2>Keep the connection.</h2>
-            <p>This public result works for anyone with the link.</p>
+            <h2>Share your EraMatch.</h2>
+            <p>Anyone with this link can view the result.</p>
           </div>
           <div className="share-actions match-share-actions">
-            <button className="button-reset" type="button" onClick={share}>
-              Share Match
+            <button
+              className="button-reset"
+              type="button"
+              disabled={cardLoading}
+              onClick={() =>
+                void withMatchCard((file) =>
+                  shareShareCard(file),
+                )
+              }
+            >
+              {cardLoading ? "Preparing…" : "Share"}
             </button>
-            <button className="button-reset" type="button" onClick={copyLink}>
-              {copied ? "Link copied" : "Copy Match Link"}
+            <button
+              className="button-reset"
+              type="button"
+              disabled={cardLoading}
+              onClick={() => void withMatchCard(downloadShareCard)}
+            >
+              Download PNG
             </button>
-            <div className="match-profile-actions">
-              {hasProfileLinks ? (
-                <>
-                  <Link
-                    className="button-reset"
-                    href={`/result/${result.snapshotAId}?fromMatch=${result.matchId}`}
-                  >
-                    View Profile A
-                  </Link>
-                  <Link
-                    className="button-reset"
-                    href={`/result/${result.snapshotBId}?fromMatch=${result.matchId}`}
-                  >
-                    View Profile B
-                  </Link>
-                </>
-              ) : (
-                <p className="match-profile-links-unavailable" role="status">
-                  Profile links are temporarily unavailable.
-                </p>
-              )}
-            </div>
+            <button
+              className="button-reset"
+              type="button"
+              onClick={() => void copyMatchLink()}
+            >
+              {linkCopied ? "Link copied" : "Copy EraMatch link"}
+            </button>
           </div>
+          {cardError && (
+            <p className="game-error" role="alert">
+              {cardError}
+            </p>
+          )}
         </section>
       </section>
     </main>

@@ -10,6 +10,7 @@ import {
 } from "@/lib/scoring/result-copy";
 import type { Answer, EraPrintResult } from "@/lib/scoring/types";
 import { fetchSnapshotAsResult } from "@/lib/repositories/eraprint-public-repository";
+import { getAuthenticatedSupabase } from "@/lib/supabase/authenticated-server";
 
 export const runtime = "nodejs";
 
@@ -226,6 +227,13 @@ async function buildShareCardData(request: Request): Promise<ShareCardData> {
   let result: EraPrintResult;
 
   if (hasSnapshotId) {
+    const supabase = await getAuthenticatedSupabase(request);
+    const ownership = await supabase.rpc("is_eraprint_snapshot_owned_by_viewer", {
+      p_snapshot_id: body.snapshotId!,
+    });
+    if (ownership.error || ownership.data !== true) {
+      throw new Error("Only the owner can generate this EraPrint card.");
+    }
     const fetchedResult = await fetchSnapshotAsResult(body.snapshotId!);
     if (!fetchedResult) {
       throw new Error("Snapshot not found or invalid.");
@@ -1182,37 +1190,11 @@ export async function POST(request: Request) {
           <div
             style={{
               display: "flex",
-              justifyContent: "space-between",
+            justifyContent: "flex-end",
               alignItems: "flex-end",
               gap: 30,
             }}
           >
-            <div style={{ display: "flex", flexDirection: "column" }}>
-              <div
-                style={{
-                  display: "flex",
-                  color: theme.muted,
-                  fontSize: 12,
-                  fontWeight: 800,
-                  letterSpacing: "3px",
-                }}
-              >
-                ERAPRINT FINGERPRINT
-              </div>
-              <div
-                style={{
-                  display: "flex",
-                  marginTop: 7,
-                  color: theme.ink,
-                  fontSize: 18,
-                  fontWeight: 700,
-                  letterSpacing: "1.5px",
-                }}
-              >
-                {result.fingerprintCode}
-              </div>
-            </div>
-
             <div
               style={{
                 display: "flex",
@@ -1234,10 +1216,10 @@ export async function POST(request: Request) {
                   display: "flex",
                   marginTop: 6,
                   fontFamily: "serif",
-                  fontSize: 24,
+                  fontSize: 18,
                 }}
               >
-                Create your own EraPrint
+                Find your era story
               </div>
             </div>
           </div>

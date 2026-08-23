@@ -1,6 +1,23 @@
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import type { Answer } from "@/lib/scoring/types";
 
+async function authenticatedAccessToken(): Promise<string> {
+  const supabase = getSupabaseBrowserClient();
+  if (!supabase) throw new Error("Supabase is required to verify this result.");
+  const session = (await supabase.auth.getSession()).data.session;
+  if (!session?.access_token) throw new Error("No authenticated EraPrint session was found.");
+  return session.access_token;
+}
+
+export async function isSnapshotOwnedByViewer(snapshotId: string): Promise<boolean> {
+  const token = await authenticatedAccessToken();
+  const response = await fetch(`/api/result/${snapshotId}/viewer`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) return false;
+  return ((await response.json()) as { isOwner?: boolean }).isOwner === true;
+}
+
 export type PersistenceStatus =
   | { mode: "demo"; persisted: false }
   | { mode: "supabase"; persisted: true; sessionId: string; snapshotId: string }

@@ -9,6 +9,11 @@ import { matchTraitName } from "@/lib/match/era-match-copy";
 import { traitDisplayDirection } from "@/lib/scoring/result-copy";
 import { getCircleResultViewerState } from "@/lib/repositories/circle-repository";
 import { TraitScoreDisplay } from "./trait-score-display";
+import {
+  createShareCardFile,
+  downloadShareCard,
+  shareShareCard,
+} from "@/lib/share/share-card-client";
 
 export function CircleResultDisplay({
   result,
@@ -19,6 +24,8 @@ export function CircleResultDisplay({
   const [viewerMemberIndex, setViewerMemberIndex] = useState<number | null>(
     null,
   );
+  const [cardLoading, setCardLoading] = useState(false);
+  const [cardError, setCardError] = useState<string | null>(null);
 
   useEffect(() => {
     getCircleResultViewerState(result.circleResultId).then((viewer) =>
@@ -30,21 +37,23 @@ export function CircleResultDisplay({
     setCopied(true);
     window.setTimeout(() => setCopied(false), 1500);
   };
-  const share = async () => {
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: "Our EraPrint Circle",
-          text: `${result.memberCount} EraPrints: ${result.primaryEra.name} × ${result.secondaryEra.name}`,
-          url: window.location.href,
-        });
-        return;
-      } catch (error) {
-        if (error instanceof DOMException && error.name === "AbortError")
-          return;
-      }
+  const circleCard = () =>
+    createShareCardFile(
+      "/api/share-card/circle",
+      { kind: "circle", resultId: result.circleResultId, viewerMemberIndex },
+      "eraprint-circle.png",
+    );
+
+  const withCircleCard = async (action: (file: File) => Promise<unknown> | unknown) => {
+    setCardLoading(true);
+    setCardError(null);
+    try {
+      await action(await circleCard());
+    } catch (error) {
+      setCardError(error instanceof Error ? error.message : "Unable to generate Circle card.");
+    } finally {
+      setCardLoading(false);
     }
-    await copy();
   };
 
   return (
@@ -111,7 +120,7 @@ export function CircleResultDisplay({
           </div>
           <p className="circle-trait-scale-explain">
             These scores show the Circle&apos;s average. Around 50 is more
-            balanced, farther from 50 shows a clearer lean.
+            balanced; farther from 50 shows a clearer lean.
           </p>
           <div className="circle-trait-list">
             {PUBLIC_TRAITS.map((definition) => {
@@ -212,7 +221,7 @@ export function CircleResultDisplay({
                   <Link
                     href={`/result/${member.snapshotId}?fromCircle=${result.circleResultId}`}
                   >
-                    View profile
+                    {isViewer ? "View My Profile" : "View Profile"}
                   </Link>
                 </article>
               );
@@ -226,13 +235,17 @@ export function CircleResultDisplay({
             <h2>Share this Circle result.</h2>
           </div>
           <div className="share-actions circle-share-actions">
-            <button className="button-reset" type="button" onClick={share}>
-              Share Circle
+            <button className="button-reset" type="button" disabled={cardLoading} onClick={() => void withCircleCard(shareShareCard)}>
+              {cardLoading ? "Preparing…" : "Share"}
+            </button>
+            <button className="button-reset" type="button" disabled={cardLoading} onClick={() => void withCircleCard(downloadShareCard)}>
+              Download PNG
             </button>
             <button className="button-reset" type="button" onClick={copy}>
-              {copied ? "Link copied" : "Copy Circle Link"}
+              {copied ? "Link copied" : "Copy Circle link"}
             </button>
           </div>
+          {cardError && <p className="game-error" role="alert">{cardError}</p>}
         </section>
       </section>
     </main>

@@ -200,8 +200,7 @@ export function RefineClient({ snapshotId }: { snapshotId: string }) {
             <p className="eyebrow">LIVING ERAPRINT</p>
             <h1>Finding your next question.</h1>
             <p className="result-processing-copy">
-              We&apos;re picking something new based on the choices you&apos;ve
-              already made.
+              We&apos;re choosing a new question based on your previous answers.
             </p>
             <div className="result-processing-track" aria-hidden="true">
               <span />
@@ -242,7 +241,7 @@ export function RefineClient({ snapshotId }: { snapshotId: string }) {
   const progress = (cumulativeAnswered / session.totalQuestionCount) * 100;
 
   return (
-    <main className="game-shell">
+    <main className="game-shell refine-game-shell">
       <div className="ambient ambient-one" />
       <section className="game-card">
         <header className="game-header">
@@ -253,10 +252,10 @@ export function RefineClient({ snapshotId }: { snapshotId: string }) {
             {totalAfterChoice}/{session.totalQuestionCount}
           </span>
         </header>
-        <div className="progress-track">
+        <div className="progress-track refine-progress-track">
           <div className="progress-fill" style={{ width: `${progress}%` }} />
         </div>
-        <div className="question-stage" key={question.id}>
+        <div className="question-stage refine-question-stage" key={question.id}>
           <div className="question-meta">
             <span>{question.category}</span>
             <span className="adaptive-pill">picked for you</span>

@@ -89,23 +89,32 @@ export function LivingResultPanel({ snapshotId, result }: { snapshotId: string; 
         {state.isLatest ? (
           <div>
             <p className="eyebrow">LIVING ERAPRINT</p>
-            <h2>Your EraPrint doesn&apos;t have to stop here.</h2>
-            <p className="living-answer-count">
-              You&apos;ve answered {state.activeRefinement?.answeredCount ?? state.answerCount} choices.
-            </p>
+            <h2>
+              {state.compatible && state.remainingCount === 0
+                ? "Your EraPrint is complete for now."
+                : "Keep building your EraPrint."}
+            </h2>
+            {(!state.compatible || state.remainingCount > 0) && (
+              <p className="living-answer-count">
+                You&apos;ve answered {state.activeRefinement?.answeredCount ?? state.answerCount} choices.
+                {state.activeRefinement && (
+                  <> {state.activeRefinement.remainingCount} choices remain.</>
+                )}
+              </p>
+            )}
             {!state.compatible
               ? <p>This historical EraPrint uses an earlier scoring version. It remains available to view and share.</p>
               : state.remainingCount === 0
-              ? <p>You&apos;ve answered every choice available right now.</p>
+              ? <p>You&apos;ve completed all available choices.</p>
               : state.activeRefinement
-                ? <p>Your refinement is already in progress.</p>
-                : <p>Keep going for as long as you want. Your progress is saved automatically.</p>}
+                ? null
+                : <p>Answer more choices whenever you&apos;re ready. Your progress is saved automatically.</p>}
           </div>
         ) : (
           <div className="living-earlier-result">
             <p className="eyebrow">LIVING ERAPRINT</p>
             <h2>You&apos;re viewing an earlier EraPrint.</h2>
-            <p>Your newest result is ready whenever you want to continue.</p>
+            <p>Open your latest EraPrint to continue refining it.</p>
             {state.latestSnapshotId && (
               <Link className="secondary-button" href={`/result/${state.latestSnapshotId}`}>
                 View latest EraPrint
@@ -116,10 +125,6 @@ export function LivingResultPanel({ snapshotId, result }: { snapshotId: string; 
         {state.compatible && state.isLatest && state.activeRefinement && (
           <div className="living-refine-actions">
             <div className="living-refine-option">
-              <strong>Continue your refinement</strong>
-              <div className="living-refine-support">
-                <span>{state.activeRefinement.remainingCount} choices remain.</span>
-              </div>
               <Link className="secondary-button" href={`/refine/${snapshotId}`}>
                 Resume refinement
               </Link>

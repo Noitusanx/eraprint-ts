@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { PUBLIC_TRAITS } from "@/lib/data/public-catalog";
@@ -19,6 +19,13 @@ import { createMatchInvite } from "@/lib/repositories/era-match-repository";
 import { createCircle } from "@/lib/repositories/circle-repository";
 import { LivingResultPanel } from "./living-result-panel";
 import { TraitScoreDisplay } from "./trait-score-display";
+import {
+  createShareCardFile as createShareCardAsset,
+  downloadShareCard,
+  filenameSlug,
+  shareShareCard,
+} from "@/lib/share/share-card-client";
+import { isSnapshotOwnedByViewer } from "@/lib/repositories/eraprint-repository";
 
 export type ShareSource =
   | {
@@ -80,6 +87,14 @@ export function ResultDisplay({
   const [inviteCopied, setInviteCopied] = useState(false);
   const [circleLoading, setCircleLoading] = useState(false);
   const [circleError, setCircleError] = useState<string | null>(null);
+  const [isOwner, setIsOwner] = useState(shareSource.type === "answers");
+
+  useEffect(() => {
+    if (shareSource.type !== "snapshot") return;
+    isSnapshotOwnedByViewer(shareSource.snapshotId)
+      .then(setIsOwner)
+      .catch(() => setIsOwner(false));
+  }, [shareSource]);
 
   const dominantTraits = useMemo(
     () => (result ? getDominantTraits(result) : []),
@@ -106,7 +121,6 @@ export function ResultDisplay({
     `My EraPrint: ${result.primaryEra.name} × ${result.secondaryEra.name}`,
     result.archetype,
     `Hidden era: ${result.hiddenEra.name}`,
-    `Code: ${result.fingerprintCode}`,
     shareUrl ? shareUrl : "",
   ]
     .filter(Boolean)
@@ -124,41 +138,18 @@ export function ResultDisplay({
         ? { snapshotId: shareSource.snapshotId }
         : { answers: shareSource.answers };
 
-    const response = await fetch("/api/share-card", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
-    });
-
-    if (!response.ok) {
-      const body = (await response.json()) as {
-        error?: string;
-      };
-
-      throw new Error(body.error ?? "Unable to generate share card.");
-    }
-
-    const blob = await response.blob();
-
-    return new File([blob], `eraprint-${result.fingerprintCode}.png`, {
-      type: "image/png",
-    });
+    const eraSlug = filenameSlug(
+      `${result.primaryEra.name}-${result.secondaryEra.name}`,
+    );
+    return createShareCardAsset(
+      "/api/share-card",
+      { kind: "personal", ...payload },
+      `eraprint-${eraSlug || "result"}.png`,
+    );
   };
 
   const downloadCardFile = (file: File) => {
-    const url = URL.createObjectURL(file);
-
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = file.name;
-
-    document.body.appendChild(anchor);
-    anchor.click();
-    anchor.remove();
-
-    URL.revokeObjectURL(url);
+    downloadShareCard(file);
   };
 
   const downloadCard = async () => {
@@ -185,25 +176,7 @@ export function ResultDisplay({
 
       const file = await createShareCardFile();
 
-      const canShareFile =
-        typeof navigator.share === "function" &&
-        navigator.canShare?.({
-          files: [file],
-        });
-
-      if (canShareFile) {
-        await navigator.share({
-          title: "My EraPrint",
-          text: shareText,
-          files: [file],
-        });
-
-        return;
-      }
-
-      // Desktop/browser yang tidak mendukung share file:
-      // otomatis download PNG.
-      downloadCardFile(file);
+      await shareShareCard(file);
     } catch (error) {
       // User menutup native share dialog bukan error sebenarnya.
       if (error instanceof DOMException && error.name === "AbortError") {
@@ -235,7 +208,7 @@ export function ResultDisplay({
         try {
           await navigator.share({
             title: "Compare EraPrints with me",
-            text: "Join my EraMatch invite and compare our EraPrint profiles.",
+            text: "Join my EraMatch invite to see what our EraPrints share.",
             url: nextUrl,
           });
         } catch (error) {
@@ -243,6 +216,7 @@ export function ResultDisplay({
             throw error;
         }
       }
+      router.push(`/match/${inviteId}`);
     } catch (error) {
       setCardError(
         error instanceof Error
@@ -317,14 +291,6 @@ export function ResultDisplay({
             </article>
           </div>
 
-          <div className="identity-code">
-            <span>Your EraPrint fingerprint</span>
-            <code>{result.fingerprintCode}</code>
-            <p className="microcopy">
-              This code belongs to this result only. If you retake EraPrint, you
-              may get a different code.
-            </p>
-          </div>
         </div>
 
         <section className="result-section">
@@ -408,7 +374,7 @@ export function ResultDisplay({
           <div className="section-heading compact">
             <div>
               <p className="eyebrow">ERA BLEND</p>
-              <h2>How the 12 profiles matched</h2>
+                <h2>How your answers matched all 12 Eras</h2>
             </div>
           </div>
 
@@ -442,7 +408,7 @@ export function ResultDisplay({
           </p>
         </section>
 
-        {shareSource.type === "snapshot" && (
+        {shareSource.type === "snapshot" && isOwner && (
           <LivingResultPanel
             snapshotId={shareSource.snapshotId}
             result={result}
@@ -451,7 +417,7 @@ export function ResultDisplay({
 
         {pilotFeedback}
 
-        {!pilotFeedback && <section className="share-panel">
+        {!pilotFeedback && isOwner && <section className="share-panel">
           <div>
             <p className="eyebrow">SHARE YOUR ERAPRINT</p>
 
@@ -487,7 +453,7 @@ export function ResultDisplay({
           </div>
         </section>}
 
-        {shareSource.type === "snapshot" && (
+        {shareSource.type === "snapshot" && isOwner && (
           <section className="explore-together">
             <header className="explore-heading">
               <p className="eyebrow">EXPLORE TOGETHER</p>
@@ -499,37 +465,30 @@ export function ResultDisplay({
               <article className="explore-option">
                 <p className="eyebrow">ERAMATCH</p>
                 <h3>Compare with one friend</h3>
-                <p>See where your profiles align, contrast, and connect.</p>
-                <div className="match-action-stack">
+                <p>See what your profiles share and where they differ.</p>
+                <div className="match-action-stack explore-match-actions">
                   {backToMatchId && (
                     <Link
                       className="secondary-button match-return-button"
                       href={`/match/result/${backToMatchId}`}
                     >
-                      ← Back to Match Result
+                      ← Back to Match
                     </Link>
                   )}
                   <button
                     className="primary-button"
                     type="button"
-                    onClick={compareWithFriend}
+                    onClick={inviteUrl ? copyInvite : compareWithFriend}
                     disabled={inviteLoading}
                   >
                     {inviteLoading
                       ? "Creating invite…"
                       : inviteUrl
-                        ? "Create another invite"
+                        ? inviteCopied
+                          ? "Link copied"
+                          : "Copy invite link"
                         : "Compare with a friend"}
                   </button>
-                  {inviteUrl && (
-                    <button
-                      className="secondary-button"
-                      type="button"
-                      onClick={copyInvite}
-                    >
-                      {inviteCopied ? "Invite link copied" : "Copy invite link"}
-                    </button>
-                  )}
                 </div>
               </article>
 
@@ -577,6 +536,30 @@ export function ResultDisplay({
         )}
 
         {!pilotFeedback && <footer className="result-footer">
+          {!isOwner && backToMatchId && (
+            <Link
+              className="secondary-button result-context-return"
+              href={`/match/result/${backToMatchId}`}
+            >
+              ← Back to Match Result
+            </Link>
+          )}
+          {!isOwner && backToCircleResultId && (
+            <Link
+              className="secondary-button result-context-return"
+              href={`/circle/result/${backToCircleResultId}`}
+            >
+              ← Back to Circle Result
+            </Link>
+          )}
+          {!isOwner && backToCircleLobbyId && !backToCircleResultId && (
+            <Link
+              className="secondary-button result-context-return"
+              href={`/circle/${backToCircleLobbyId}`}
+            >
+              ← Back to Circle
+            </Link>
+          )}
           {persistence !== undefined && (
             <div>
               <strong>Your result</strong>

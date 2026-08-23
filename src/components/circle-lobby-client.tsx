@@ -81,6 +81,23 @@ export function CircleLobbyClient({
       .finally(() => setLoading(false));
   }, [lobby.circleId, lobby.resultId, lobby.status, returnSnapshotId, router]);
 
+  useEffect(() => {
+    if (lobby.status !== "OPEN" || returnSnapshotId) return;
+
+    const refreshLobby = () => {
+      if (document.visibilityState === "visible") router.refresh();
+    };
+    const intervalId = window.setInterval(refreshLobby, 3000);
+    window.addEventListener("focus", refreshLobby);
+    document.addEventListener("visibilitychange", refreshLobby);
+
+    return () => {
+      window.clearInterval(intervalId);
+      window.removeEventListener("focus", refreshLobby);
+      document.removeEventListener("visibilitychange", refreshLobby);
+    };
+  }, [lobby.status, returnSnapshotId, router]);
+
   const join = async () => {
     if (!participant?.snapshotId) return;
     setJoining(true);
@@ -170,6 +187,9 @@ export function CircleLobbyClient({
   const isOwner = participant?.isOwner === true;
   const isJoinedMember = participant?.isMember === true && !isOwner;
   const mySnapshotId = backSnapshotId ?? participant?.snapshotId;
+  const hasIncompatibleEraPrint = error?.includes(
+    "incompatible scoring version",
+  );
 
   return (
     <main className="result-shell circle-lobby-shell">
@@ -301,14 +321,36 @@ export function CircleLobbyClient({
         <section className="circle-lobby-actions">
           {lobby.status === "EXPIRED" ? (
             <p role="alert">This Circle invite has expired.</p>
-          ) : joining ? (
-            <p aria-live="polite">Joining Circle…</p>
-          ) : loading ? (
-            <p aria-live="polite">
-              Checking your EraPrint…
-            </p>
+          ) : joining || loading ? (
+            <div
+              className="circle-lobby-loading"
+              aria-live="polite"
+              aria-busy="true"
+            >
+              <div className="circle-lobby-loading-mark" aria-hidden="true">
+                <span />
+                <span />
+                <span />
+              </div>
+              <div>
+                <strong>{joining ? "Joining your Circle" : "Finding your EraPrint"}</strong>
+                <p>
+                  {joining
+                    ? "Adding your profile to the group…"
+                    : "Checking the EraPrint saved in this browser…"}
+                </p>
+              </div>
+            </div>
           ) : (
             <>
+              {participant?.isMember && mySnapshotId && (
+                <Link
+                  className="secondary-button circle-lobby-return-button"
+                  href={`/result/${mySnapshotId}?fromCircleLobby=${lobby.circleId}`}
+                >
+                  ← Back to My EraPrint
+                </Link>
+              )}
               {isOwner && ready && (
                 <button
                   className="primary-button"
@@ -326,7 +368,7 @@ export function CircleLobbyClient({
                   onClick={inviteFriends}
                 >
                   {copied
-                    ? "Invite link copied"
+                    ? "Link copied"
                     : ready
                       ? "Invite more"
                       : "Invite friends"}
@@ -358,17 +400,24 @@ export function CircleLobbyClient({
             </>
           )}
           {error && (
-            <p className="game-error" role="alert">
-              {error}
-            </p>
-          )}
-          {participant?.isMember && mySnapshotId && (
-            <Link
-              className="circle-back-action"
-              href={`/result/${mySnapshotId}?fromCircleLobby=${lobby.circleId}`}
-            >
-              ← Back to my EraPrint
-            </Link>
+            <div className="circle-lobby-error" role="alert">
+              <p className="game-error">{error}</p>
+              {hasIncompatibleEraPrint && (
+                <>
+                  <p>
+                    The EraPrint saved in this browser is from a different
+                    scoring version than this Circle.
+                  </p>
+                  <Link
+                    className="secondary-button"
+                    href="/play"
+                    onClick={startEraPrint}
+                  >
+                    Take a current EraPrint to join
+                  </Link>
+                </>
+              )}
+            </div>
           )}
         </section>
       </section>

@@ -57,6 +57,30 @@ export async function getMyLatestSnapshotId(): Promise<string | null> {
   return body.snapshotId;
 }
 
+export async function getMatchViewerSide(
+  matchId: string,
+): Promise<"A" | "B" | null> {
+  const body = await authenticatedRequest<{ side: "A" | "B" | null }>(
+    `/api/match/result/${matchId}/viewer`,
+  );
+  return body.side;
+}
+
+export type MatchInviteViewerState = {
+  isOwner: boolean;
+  snapshotId: string | null;
+  status: "OPEN" | "COMPLETED" | "EXPIRED";
+  matchId: string | null;
+};
+
+export async function getMatchInviteViewerState(
+  inviteId: string,
+): Promise<MatchInviteViewerState> {
+  return authenticatedRequest<MatchInviteViewerState>(
+    `/api/match/invites/${inviteId}/viewer`,
+  );
+}
+
 export async function completeMatchInvite(
   inviteId: string,
   snapshotId: string,
