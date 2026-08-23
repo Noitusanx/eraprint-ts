@@ -13,7 +13,7 @@ No Google or email login is required. When Supabase is configured, the app uses 
 - Adaptive selection is deterministic and runs on the server.
 - 8 personality signals, 12 Era profiles, and a 30-question catalog.
 - Primary, Secondary, and Hidden Era results.
-- Archetype, Clarity, full Era Blend, strongest signals, and fingerprint.
+- Archetype, Clarity, full Era Blend, and strongest signals.
 - Browser-safe public question data; hidden choice effects stay server-side.
 - Responsive UI for mobile, tablet, and desktop.
 
@@ -22,7 +22,8 @@ No Google or email login is required. When Supabase is configured, the app uses 
 - Anonymous Supabase persistence with Row Level Security.
 - Immutable public result URLs at `/result/{snapshotId}`.
 - Public result pages read stored snapshot values rather than recalculating them.
-- PNG Share Card generation, native sharing when available, downloads, and copied result text.
+- Owner-only Personal PNG generation, native file sharing, downloads, and copied result text.
+- Public visitors can view a shared profile but cannot refine, share, or download its Personal card.
 - Old shared URLs remain unchanged when a profile is refined later.
 
 ### Living EraPrint
@@ -44,15 +45,19 @@ No Google or email login is required. When Supabase is configured, the app uses 
 - Compares all 8 signals and both 12-Era blends.
 - Shows an overall match score, strongest shared signals, biggest contrast, shared Era, and side-by-side profiles.
 - Match results are immutable and keep referencing the exact snapshots used when the match was created.
-- Public match result pages include links back to Profile A and Profile B when snapshot links are available.
+- The invite creator gets a waiting page that refreshes automatically and shows when the EraMatch is ready.
+- Participants can open both profiles; their own profile retains owner controls and the other profile is read-only.
+- Dedicated 1080 × 1920 EraMatch PNG cards support native file sharing and downloads.
 
 ### Circle
 
 - Create a Circle from a persisted EraPrint and invite 3–10 members.
 - Public lobby with member count, join state, invite actions, and owner-only reveal.
+- Lobby membership refreshes automatically so the creator can see new members without reloading manually.
 - Circle results include Primary, Secondary, and Hidden Circle Eras, averaged signals, strongest signals, Most United, Most Different, Era Blend, and member profiles.
 - Circle membership and finalized results keep the exact snapshots used at that time.
 - A later Living EraPrint refinement does not change an old Circle result.
+- Dedicated 1080 × 1920 Circle PNG cards support native file sharing and downloads.
 
 ## Intentionally not implemented
 
@@ -218,12 +223,19 @@ EraMatch and Circle:
 ```text
 POST /api/match/invites
 POST /api/match/invites/{inviteId}/complete
+GET  /api/match/invites/{inviteId}/viewer
+GET  /api/match/result/{matchId}/viewer
 GET  /api/match/snapshots/current
+POST /api/share-card/match
 
 POST /api/circle
 POST /api/circle/{circleId}/join
 GET  /api/circle/{circleId}/participant
 POST /api/circle/{circleId}/finalize
+GET  /api/circle/result/{resultId}/viewer
+POST /api/share-card/circle
+
+GET  /api/result/{snapshotId}/viewer
 ```
 
 ## Quick start
@@ -314,9 +326,19 @@ supabase/migrations/202608120001_circle_lobby_creator_identity.sql
 supabase/migrations/202608130001_continuous_refinement.sql
 supabase/migrations/202608130002_remove_refinement_modes.sql
 supabase/migrations/202608130003_initial_thirteen.sql
+supabase/migrations/202608170001_private_pilot.sql
+supabase/migrations/202608230001_match_result_viewer_identity.sql
+supabase/migrations/202608230002_snapshot_viewer_ownership.sql
+supabase/migrations/202608230003_match_invite_viewer_state.sql
 ```
 
 The seed contains 8 traits, 12 Eras, 96 Era-signal values, 30 questions, all public choices, and all hidden effects.
+
+## Pre-launch data cleanup
+
+Run `scripts/clean-test-data.sql` in the linked project's Supabase SQL Editor to remove transactional test data while preserving the question catalog, Eras, traits, scoring vectors, schema, and migration history. A successful cleanup returns `0` for every `remaining_rows` value; the final boolean checks should all be `true`.
+
+The cleanup script intentionally leaves `auth.users` and `pilot_results` untouched.
 
 ## Verification
 
@@ -349,7 +371,7 @@ src/lib/data/public-catalog.ts
   browser-safe question and choice content
 
 src/lib/scoring/scoring-engine.ts
-  scoring, deterministic adaptation, validation, archetypes, fingerprints
+  scoring, deterministic adaptation, validation, and archetypes
 
 src/components/game-client.tsx
   initial game UI
