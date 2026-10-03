@@ -103,7 +103,10 @@ export function CircleLobbyClient({
     setJoining(true);
     setError(null);
     try {
-      const memberCount = await joinCircle(lobby.circleId, participant.snapshotId);
+      const memberCount = await joinCircle(
+        lobby.circleId,
+        participant.snapshotId,
+      );
       clearPendingSocialAction();
       setParticipant({
         ...participant,
@@ -229,8 +232,7 @@ export function CircleLobbyClient({
             {lobby.members.map((member, index) => {
               const memberIndex = index + 1;
               const isViewer = participant?.memberIndex === memberIndex;
-              const isCreator =
-                (lobby.creatorMemberIndex ?? 1) === memberIndex;
+              const isCreator = (lobby.creatorMemberIndex ?? 1) === memberIndex;
               const badge = isViewer
                 ? isCreator
                   ? "YOU · CREATOR"
@@ -333,7 +335,9 @@ export function CircleLobbyClient({
                 <span />
               </div>
               <div>
-                <strong>{joining ? "Joining your Circle" : "Finding your EraPrint"}</strong>
+                <strong>
+                  {joining ? "Joining your Circle" : "Finding your EraPrint"}
+                </strong>
                 <p>
                   {joining
                     ? "Adding your profile to the group…"
