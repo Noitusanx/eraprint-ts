@@ -41,8 +41,8 @@ export function LivingResultPanel({ snapshotId, result }: { snapshotId: string; 
             <p className="eyebrow">WHAT CHANGED</p>
             <h2>
               {changes.length || eraChanged || clarityChanged
-                ? "Your EraPrint shifted."
-                : "Your EraPrint stayed remarkably steady."}
+                ? "Your Eraprint shifted."
+                : "Your Eraprint stayed remarkably steady."}
             </h2>
           </div>
 
@@ -91,8 +91,8 @@ export function LivingResultPanel({ snapshotId, result }: { snapshotId: string; 
             <p className="eyebrow">LIVING ERAPRINT</p>
             <h2>
               {state.compatible && state.remainingCount === 0
-                ? "Your EraPrint is complete for now."
-                : "Keep building your EraPrint."}
+                ? "Your Eraprint is complete for now."
+                : "Keep building your Eraprint."}
             </h2>
             {(!state.compatible || state.remainingCount > 0) && (
               <p className="living-answer-count">
@@ -103,7 +103,7 @@ export function LivingResultPanel({ snapshotId, result }: { snapshotId: string; 
               </p>
             )}
             {!state.compatible
-              ? <p>This historical EraPrint uses an earlier scoring version. It remains available to view and share.</p>
+              ? <p>This historical Eraprint uses an earlier scoring version. It remains available to view and share.</p>
               : state.remainingCount === 0
               ? <p>You&apos;ve completed all available choices.</p>
               : state.activeRefinement
@@ -113,11 +113,11 @@ export function LivingResultPanel({ snapshotId, result }: { snapshotId: string; 
         ) : (
           <div className="living-earlier-result">
             <p className="eyebrow">LIVING ERAPRINT</p>
-            <h2>You&apos;re viewing an earlier EraPrint.</h2>
-            <p>Open your latest EraPrint to continue refining it.</p>
+            <h2>You&apos;re viewing an earlier Eraprint.</h2>
+            <p>Open your latest Eraprint to continue refining it.</p>
             {state.latestSnapshotId && (
               <Link className="secondary-button" href={`/result/${state.latestSnapshotId}`}>
-                View latest EraPrint
+                View latest Eraprint
               </Link>
             )}
           </div>
@@ -134,7 +134,7 @@ export function LivingResultPanel({ snapshotId, result }: { snapshotId: string; 
         {state.compatible && state.isLatest && !state.activeRefinement && state.remainingCount > 0 && (
           <div className="living-refine-actions">
             <div className="living-refine-option living-refine-option-primary">
-              <Link className="primary-button" href={`/refine/${snapshotId}`}>Refine your EraPrint</Link>
+              <Link className="primary-button" href={`/refine/${snapshotId}`}>Refine your Eraprint</Link>
             </div>
           </div>
         )}

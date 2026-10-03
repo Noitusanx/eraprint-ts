@@ -188,7 +188,7 @@ export function GameClient() {
       <section className="game-card">
         <header className="game-header">
           <Link className="wordmark" href="/">
-            EraPrint
+            Eraprint
           </Link>
           <span className="step-counter">
             {Math.min(answers.length + 1, PUBLIC_INITIAL_DECISIONS)}/

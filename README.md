@@ -1,12 +1,12 @@
-# EraPrint
+# Eraprint
 
-EraPrint is a fan-made, mobile-first entertainment personality game. A new visitor makes 13 choices, receives an EraPrint built from eight personality signals and 12 Era profiles, and can share or compare that persisted result with friends.
+Eraprint is a fan-made, mobile-first entertainment personality game. A new visitor makes 13 choices, receives an Eraprint built from eight personality signals and 12 Era profiles, and can share or compare that persisted result with friends.
 
 No Google or email login is required. When Supabase is configured, the app uses an anonymous authenticated session so a browser can own its profile, refine it over time, and create social experiences without exposing private profile IDs.
 
 ## Current features
 
-### Initial EraPrint
+### Initial Eraprint
 
 - Exactly 5 fixed anchor questions followed by 8 adaptive questions.
 - The first result is generated only after all 13 questions are answered.
@@ -26,9 +26,9 @@ No Google or email login is required. When Supabase is configured, the app uses 
 - Public visitors can view a shared profile but cannot refine, share, or download its Personal card.
 - Old shared URLs remain unchanged when a profile is refined later.
 
-### Living EraPrint
+### Living Eraprint
 
-- An owner can optionally refine their latest persisted EraPrint.
+- An owner can optionally refine their latest persisted Eraprint.
 - Refinement continues through unused adaptive questions until the user finishes later or exhausts the catalog.
 - Previously answered questions are never selected again.
 - Results are calculated from the full cumulative answer history.
@@ -40,8 +40,8 @@ No Google or email login is required. When Supabase is configured, the app uses 
 
 ### EraMatch
 
-- Create an invite from a persisted EraPrint.
-- A friend joins with their own latest persisted EraPrint or completes EraPrint first.
+- Create an invite from a persisted Eraprint.
+- A friend joins with their own latest persisted Eraprint or completes Eraprint first.
 - Compares all 8 signals and both 12-Era blends.
 - Shows an overall match score, strongest shared signals, biggest contrast, shared Era, and side-by-side profiles.
 - Match results are immutable and keep referencing the exact snapshots used when the match was created.
@@ -51,12 +51,12 @@ No Google or email login is required. When Supabase is configured, the app uses 
 
 ### Circle
 
-- Create a Circle from a persisted EraPrint and invite 3–10 members.
+- Create a Circle from a persisted Eraprint and invite 3–10 members.
 - Public lobby with member count, join state, invite actions, and owner-only reveal.
 - Lobby membership refreshes automatically so the creator can see new members without reloading manually.
 - Circle results include Primary, Secondary, and Hidden Circle Eras, averaged signals, strongest signals, Most United, Most Different, Era Blend, and member profiles.
 - Circle membership and finalized results keep the exact snapshots used at that time.
-- A later Living EraPrint refinement does not change an old Circle result.
+- A later Living Eraprint refinement does not change an old Circle result.
 - Dedicated 1080 × 1920 Circle PNG cards support native file sharing and downloads.
 
 ## Intentionally not implemented
@@ -84,7 +84,7 @@ Hidden scoring data does **not** go to the browser bundle.
 
 The browser imports `src/lib/data/public-catalog.ts`, which contains only the question and choice content needed to render the game. Hidden choice-to-signal effects, internal Era vectors, scoring, and adaptive ranking remain in server code.
 
-The initial game and Living EraPrint use separate validation boundaries:
+The initial game and Living Eraprint use separate validation boundaries:
 
 ```text
 validateInitialGameSequence(...)
@@ -121,7 +121,7 @@ Era comparison uses the complete 8-dimensional signal vector rather than assigni
 ```text
 answer
   → hidden signal effects
-  → 8-signal EraPrint
+  → 8-signal Eraprint
   → comparison with 12 Era profiles
 ```
 
@@ -149,7 +149,7 @@ question_choices
 choice_trait_effects
 ```
 
-Profile and EraPrint history:
+Profile and Eraprint history:
 
 ```text
 profiles
@@ -187,10 +187,10 @@ Browser writes use the anonymous Supabase JWT and PostgreSQL RLS. Server routes 
 
 ```text
 /                              homepage
-/play                          initial 13-question EraPrint
+/play                          initial 13-question Eraprint
 /result                        result calculation and initial persistence
-/result/{snapshotId}           immutable public EraPrint snapshot
-/refine/{snapshotId}           owner-only Living EraPrint round
+/result/{snapshotId}           immutable public Eraprint snapshot
+/refine/{snapshotId}           owner-only Living Eraprint round
 /match/{inviteId}              EraMatch invite
 /match/result/{matchId}        immutable public EraMatch result
 /circle/{circleId}             Circle lobby
@@ -199,7 +199,7 @@ Browser writes use the anonymous Supabase JWT and PostgreSQL RLS. Server routes 
 
 ## Server endpoints
 
-Initial EraPrint:
+Initial Eraprint:
 
 ```text
 POST /api/game/next
@@ -208,7 +208,7 @@ POST /api/game/persist
 POST /api/share-card
 ```
 
-Living EraPrint:
+Living Eraprint:
 
 ```text
 GET  /api/refine/{snapshotId}/state
@@ -281,7 +281,7 @@ Open `http://localhost:3000`.
 
 The initial 13-question game and local result work without Supabase. The latest initial answer session is kept in `localStorage`, while scoring still runs through the Next.js server route.
 
-Features that require owned persisted snapshots—Living EraPrint, immutable public result URLs, EraMatch, and Circle—require Supabase configuration.
+Features that require owned persisted snapshots—Living Eraprint, immutable public result URLs, EraMatch, and Circle—require Supabase configuration.
 
 ## Connect Supabase
 
@@ -380,7 +380,7 @@ src/components/result-display.tsx
   local and persisted result presentation, sharing, social entry points
 
 src/components/refine-client.tsx
-  Living EraPrint question flow
+  Living Eraprint question flow
 
 src/components/match-invite-client.tsx
 src/components/match-result-display.tsx
@@ -401,4 +401,4 @@ tests/circle-engine.test.ts
 
 ## IP / fan-project note
 
-EraPrint is an unofficial fan project. It uses original UI and original copy and does not ship official photos, album artwork, long lyrics, logos, or voice/likeness assets. Keep a visible fan-made/unofficial disclaimer when deploying publicly and obtain appropriate legal review before commercial use.
+Eraprint is an unofficial fan project. It uses original UI and original copy and does not ship official photos, album artwork, long lyrics, logos, or voice/likeness assets. Keep a visible fan-made/unofficial disclaimer when deploying publicly and obtain appropriate legal review before commercial use.

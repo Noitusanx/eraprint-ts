@@ -232,7 +232,7 @@ async function buildShareCardData(request: Request): Promise<ShareCardData> {
       p_snapshot_id: body.snapshotId!,
     });
     if (ownership.error || ownership.data !== true) {
-      throw new Error("Only the owner can generate this EraPrint card.");
+      throw new Error("Only the owner can generate this Eraprint card.");
     }
     const fetchedResult = await fetchSnapshotAsResult(body.snapshotId!);
     if (!fetchedResult) {
@@ -764,7 +764,7 @@ export async function POST(request: Request) {
         error:
           error instanceof Error
             ? error.message
-            : "Unable to generate EraPrint card.",
+            : "Unable to generate Eraprint card.",
       },
       { status: 400 },
     );
@@ -840,7 +840,7 @@ export async function POST(request: Request) {
                 letterSpacing: "-1px",
               }}
             >
-              EraPrint
+              Eraprint
             </div>
           </div>
 

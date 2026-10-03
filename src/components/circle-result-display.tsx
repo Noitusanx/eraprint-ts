@@ -63,7 +63,7 @@ export function CircleResultDisplay({
       <section className="result-card">
         <header className="result-topbar">
           <Link className="wordmark" href="/">
-            EraPrint
+            Eraprint
           </Link>
         </header>
         <div className="reveal-block circle-result-hero">

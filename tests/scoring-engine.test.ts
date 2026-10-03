@@ -69,7 +69,7 @@ describe("EraPrint scoring engine", () => {
 
   it("explains clarity as the overall emerging pattern without trait-count language", () => {
     const explanation = buildClarityExplanation(calculateEraPrint(guardedAssertive));
-    expect(explanation).toContain("your answers came together to form your EraPrint");
+    expect(explanation).toContain("your answers came together to form your Eraprint");
     expect(explanation).toContain("It is not an accuracy score.");
     expect(explanation).toMatch(/At \d+%, your answers formed/);
     expect(explanation).not.toContain("same direction");

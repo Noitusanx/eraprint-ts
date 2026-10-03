@@ -14,7 +14,7 @@ export default async function MatchInvitePage({
   const invite = await fetchPublicMatchInvite(inviteId);
 
   if (!invite) {
-    return <main className="result-shell"><section className="empty-result-card"><p className="eyebrow">ERAMATCH INVITE</p><h1>This invite is not available.</h1><p>It may be invalid or no longer exist.</p><Link className="primary-button" href="/">Back to EraPrint</Link></section></main>;
+    return <main className="result-shell"><section className="empty-result-card"><p className="eyebrow">ERAMATCH INVITE</p><h1>This invite is not available.</h1><p>It may be invalid or no longer exist.</p><Link className="primary-button" href="/">Back to Eraprint</Link></section></main>;
   }
 
   return <MatchInviteClient invite={invite} returnSnapshotId={snapshotId && UUID_PATTERN.test(snapshotId) ? snapshotId : undefined} />;

@@ -1,6 +1,6 @@
 # Experimental Era Identity Model
 
-EraPrint keeps its eight public personality signals as the primary description of the user. Four internal signals only describe how that personality tends to be expressed. They are never presented as personality claims and never appear in the public question catalog.
+Eraprint keeps its eight public personality signals as the primary description of the user. Four internal signals only describe how that personality tends to be expressed. They are never presented as personality claims and never appear in the public question catalog.
 
 ## Internal dimensions
 
@@ -69,4 +69,4 @@ The public wording and eight public effects retain their v1.1 meanings. The diag
 
 ## Compatibility
 
-Snapshots persist their computed blend and scoring version. Because the candidate failed its production-health gate, no new scoring version is activated. Existing EraPrint, EraMatch, Circle, refinement, and public result behavior remain on v1.1. Clarity remains calculated exclusively from the eight public personality signals.
+Snapshots persist their computed blend and scoring version. Because the candidate failed its production-health gate, no new scoring version is activated. Existing Eraprint, EraMatch, Circle, refinement, and public result behavior remain on v1.1. Clarity remains calculated exclusively from the eight public personality signals.

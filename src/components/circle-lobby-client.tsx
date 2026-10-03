@@ -145,7 +145,7 @@ export function CircleLobbyClient({
     if (navigator.share) {
       try {
         await navigator.share({
-          title: "Join my EraPrint Circle",
+          title: "Join my Eraprint Circle",
           url,
         });
         return;
@@ -200,7 +200,7 @@ export function CircleLobbyClient({
       <section className="result-card circle-lobby-card">
         <header className="result-topbar">
           <Link className="wordmark" href="/">
-            EraPrint
+            Eraprint
           </Link>
         </header>
         <div className="circle-lobby-hero">
@@ -208,7 +208,7 @@ export function CircleLobbyClient({
           {lobby.status === "OPEN" && (
             <span className="circle-status-label">OPEN CIRCLE</span>
           )}
-          <h1>Bring your EraPrints together.</h1>
+          <h1>Bring your Eraprints together.</h1>
           <strong>
             {lobby.memberCount} of {lobby.maxMembers} joined
           </strong>
@@ -336,12 +336,12 @@ export function CircleLobbyClient({
               </div>
               <div>
                 <strong>
-                  {joining ? "Joining your Circle" : "Finding your EraPrint"}
+                  {joining ? "Joining your Circle" : "Finding your Eraprint"}
                 </strong>
                 <p>
                   {joining
                     ? "Adding your profile to the group…"
-                    : "Checking the EraPrint saved in this browser…"}
+                    : "Checking the Eraprint saved in this browser…"}
                 </p>
               </div>
             </div>
@@ -352,7 +352,7 @@ export function CircleLobbyClient({
                   className="secondary-button circle-lobby-return-button"
                   href={`/result/${mySnapshotId}?fromCircleLobby=${lobby.circleId}`}
                 >
-                  ← Back to My EraPrint
+                  ← Back to My Eraprint
                 </Link>
               )}
               {isOwner && ready && (
@@ -380,7 +380,7 @@ export function CircleLobbyClient({
               )}
               {!participant?.isMember && participant?.snapshotId && !full && (
                 <button className="primary-button" type="button" onClick={join}>
-                  Join with my EraPrint
+                  Join with my Eraprint
                 </button>
               )}
               {!participant?.isMember && !participant?.snapshotId && !full && (
@@ -389,7 +389,7 @@ export function CircleLobbyClient({
                   href="/play"
                   onClick={startEraPrint}
                 >
-                  Take EraPrint to join
+                  Take Eraprint to join
                 </Link>
               )}
               {!participant?.isMember && full && (
@@ -409,7 +409,7 @@ export function CircleLobbyClient({
               {hasIncompatibleEraPrint && (
                 <>
                   <p>
-                    The EraPrint saved in this browser is from a different
+                    The Eraprint saved in this browser is from a different
                     scoring version than this Circle.
                   </p>
                   <Link
@@ -417,7 +417,7 @@ export function CircleLobbyClient({
                     href="/play"
                     onClick={startEraPrint}
                   >
-                    Take a current EraPrint to join
+                    Take a current Eraprint to join
                   </Link>
                 </>
               )}

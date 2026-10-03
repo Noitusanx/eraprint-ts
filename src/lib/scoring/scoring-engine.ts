@@ -401,7 +401,7 @@ export function validateLivingEraPrintAnswers(
   const errors: string[] = [];
 
   if (baseAnswers.length < MINIMUM_PERSISTED_RESULT_ANSWERS) {
-    errors.push("Living EraPrint requires a completed initial EraPrint.");
+    errors.push("Living Eraprint requires a completed initial Eraprint.");
     return errors;
   }
   if (refinementAnswers.length > maximumNewAnswers) {
@@ -469,7 +469,7 @@ export function buildFingerprintCode(
 
 export function calculateEraPrint(answers: Answer[]): EraPrintResult {
   if (answers.length === 0) {
-    throw new Error("At least one answer is required to calculate an EraPrint.");
+    throw new Error("At least one answer is required to calculate an Eraprint.");
   }
 
   const traitScores = calculateTraitScores(answers);

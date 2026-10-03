@@ -13,7 +13,7 @@ function Brand({ label }: { label: string }) {
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
         <div style={{ display: "flex", width: 16, height: 16, borderRadius: 99, background: accent }} />
-        <div style={{ display: "flex", fontFamily: "serif", fontSize: 32, fontWeight: 700 }}>EraPrint</div>
+        <div style={{ display: "flex", fontFamily: "serif", fontSize: 32, fontWeight: 700 }}>Eraprint</div>
       </div>
       <div style={{ display: "flex", padding: "11px 17px", border: `1px solid ${line}`, borderRadius: 99, color: muted, fontSize: 14, fontWeight: 800, letterSpacing: 3 }}>
         {label}
@@ -25,7 +25,7 @@ function Brand({ label }: { label: string }) {
 function Footer({ copy }: { copy: string }) {
   return (
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginTop: "auto", paddingTop: 30, borderTop: `1px solid ${line}` }}>
-      <div style={{ display: "flex", color: muted, fontSize: 16 }}>See what your EraPrints reveal.</div>
+      <div style={{ display: "flex", color: muted, fontSize: 16 }}>See what your Eraprints reveal.</div>
       <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
         <div style={{ display: "flex", color: muted, fontSize: 14 }}>{copy}</div>
         <div style={{ display: "flex", marginTop: 6, fontFamily: "serif", fontSize: 18 }}>Find your era story</div>
@@ -88,7 +88,7 @@ export function EraMatchShareCard({ result, viewerSide }: { result: PublicEraMat
         <div style={{ display: "flex", marginTop: 24, padding: "21px 28px", borderRadius: 20, background: "rgba(255,255,255,.35)", color: muted, fontSize: 17 }}>
           One contrast: {matchTraitName(result.biggestContrast.code)} · {Math.round(result.biggestContrast.difference)} points apart
         </div>
-        <Footer copy="Compare your EraPrints" />
+        <Footer copy="Compare your Eraprints" />
       </div>
     </div>
   );

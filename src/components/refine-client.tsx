@@ -188,7 +188,7 @@ export function RefineClient({ snapshotId }: { snapshotId: string }) {
         <section className="game-card result-processing">
           <header className="game-header">
             <Link className="wordmark" href={`/result/${snapshotId}`}>
-              EraPrint
+              Eraprint
             </Link>
           </header>
           <div className="result-processing-body refine-processing-body">
@@ -218,12 +218,12 @@ export function RefineClient({ snapshotId }: { snapshotId: string }) {
         <section className="game-card refine-unavailable-card">
           <header className="game-header">
             <Link className="wordmark" href={`/result/${snapshotId}`}>
-              EraPrint
+              Eraprint
             </Link>
           </header>
           <div className="refine-unavailable-body">
             <p className="eyebrow">LIVING ERAPRINT</p>
-            <h1>This EraPrint can&apos;t be refined from here.</h1>
+            <h1>This Eraprint can&apos;t be refined from here.</h1>
             <p>{error}</p>
             <Link className="secondary-button" href={`/result/${snapshotId}`}>
               Back to result
@@ -246,7 +246,7 @@ export function RefineClient({ snapshotId }: { snapshotId: string }) {
       <section className="game-card">
         <header className="game-header">
           <Link className="wordmark" href={`/result/${snapshotId}`}>
-            EraPrint
+            Eraprint
           </Link>
           <span className="step-counter">
             {totalAfterChoice}/{session.totalQuestionCount}

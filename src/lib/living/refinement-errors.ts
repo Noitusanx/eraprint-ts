@@ -29,7 +29,7 @@ export function refinementErrorResponse(error: unknown, fallback: string) {
     );
   }
 
-  console.error("Living EraPrint API failure", error);
+  console.error("Living Eraprint API failure", error);
   return NextResponse.json(
     { error: fallback, code: "INTERNAL_ERROR" satisfies RefinementErrorCode },
     { status: 500 },

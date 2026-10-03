@@ -31,7 +31,7 @@ async function fetchEraPrint(answers: Answer[]): Promise<EraPrintResult> {
   };
 
   if (!response.ok || !body.result) {
-    throw new Error(body.error ?? "Unable to calculate EraPrint.");
+    throw new Error(body.error ?? "Unable to calculate Eraprint.");
   }
 
   return body.result;
@@ -50,7 +50,7 @@ function ResultLoading() {
       <section className="result-card result-processing">
         <header className="result-topbar">
           <Link className="wordmark" href="/">
-            EraPrint
+            Eraprint
           </Link>
         </header>
 
@@ -63,7 +63,7 @@ function ResultLoading() {
 
           <p className="eyebrow">YOUR ERAPRINT IS TAKING SHAPE</p>
 
-          <h1>Turning your choices into your EraPrint.</h1>
+          <h1>Turning your choices into your Eraprint.</h1>
 
           <p className="result-processing-copy">
             Give us a moment. We&apos;re putting the pieces together.
@@ -155,7 +155,7 @@ export function ResultClient() {
       .catch((error) => {
         if (!cancelled) {
           setResultError(
-            error instanceof Error ? error.message : "Unable to load EraPrint.",
+            error instanceof Error ? error.message : "Unable to load Eraprint.",
           );
         }
       });
@@ -177,7 +177,7 @@ export function ResultClient() {
           <h1>Play the 13 choices first.</h1>
           <p>Your result is generated from the choices you make.</p>
           <Link className="primary-button" href="/play">
-            Start EraPrint
+            Start Eraprint
           </Link>
         </section>
       </main>
@@ -190,9 +190,9 @@ export function ResultClient() {
         <section className="empty-result-card">
           <p className="eyebrow">RESULT ERROR</p>
           <h1>We couldn&apos;t open this result.</h1>
-          <p>{resultError ?? "Please retake the EraPrint."}</p>
+          <p>{resultError ?? "Please retake the Eraprint."}</p>
           <Link className="primary-button" href="/play">
-            Retake EraPrint
+            Retake Eraprint
           </Link>
         </section>
       </main>

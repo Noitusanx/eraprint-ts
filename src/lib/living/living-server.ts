@@ -13,7 +13,7 @@ export function assertCurrentRefinementVersion(snapshot: {
   ) {
     throw new RefinementError(
       "INCOMPATIBLE_SCORING_VERSION",
-      "This EraPrint uses an earlier scoring version and remains available as a historical result.",
+      "This Eraprint uses an earlier scoring version and remains available as a historical result.",
       409,
     );
   }
@@ -47,7 +47,7 @@ export async function getOwnedSnapshotContext(
   if (!snapshotResponse.data) {
     throw new RefinementError(
       "NOT_OWNER",
-      "This EraPrint is not owned by the current session.",
+      "This Eraprint is not owned by the current session.",
       403,
     );
   }
@@ -62,7 +62,7 @@ export async function getOwnedSnapshotContext(
   if (answers.length !== snapshotResponse.data.answer_count) {
     throw new RefinementError(
       "INVALID_SNAPSHOT",
-      "This EraPrint has an incomplete answer history.",
+      "This Eraprint has an incomplete answer history.",
       409,
     );
   }

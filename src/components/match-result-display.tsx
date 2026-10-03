@@ -75,7 +75,7 @@ export function MatchResultDisplay({
       <section className="result-card">
         <header className="result-topbar">
           <Link className="wordmark" href="/">
-            EraPrint
+            Eraprint
           </Link>
         </header>
 

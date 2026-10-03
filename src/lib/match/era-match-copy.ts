@@ -7,16 +7,16 @@ export function matchTraitName(code: string): string {
 
 export function buildEraMatchSummary(result: PublicEraMatchResult): string {
   if (result.matchScore >= 85) {
-    return "Your EraPrints are very similar overall, with only a few differences.";
+    return "Your Eraprints are very similar overall, with only a few differences.";
   }
 
   if (result.matchScore >= 70) {
-    return "Your EraPrints are similar overall, with some clear differences.";
+    return "Your Eraprints are similar overall, with some clear differences.";
   }
 
   if (result.matchScore >= 50) {
-    return "Your EraPrints share some patterns but also have clear differences.";
+    return "Your Eraprints share some patterns but also have clear differences.";
   }
 
-  return "Your EraPrints are mostly different, with a few points of overlap.";
+  return "Your Eraprints are mostly different, with a few points of overlap.";
 }

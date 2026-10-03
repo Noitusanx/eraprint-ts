@@ -139,15 +139,15 @@ export function MatchInviteClient({
             ? invite.status === "COMPLETED"
               ? "Your EraMatch is ready."
               : "Waiting for your friend…"
-            : `${invite.owner.archetype} wants to compare EraPrints.`}
+            : `${invite.owner.archetype} wants to compare Eraprints.`}
         </h1>
         <p>
           {viewer?.isOwner
             ? invite.status === "COMPLETED"
-              ? "Your friend has joined. See what your EraPrints share and where they differ."
+              ? "Your friend has joined. See what your Eraprints share and where they differ."
               : "Your invite is ready to share. This page will update automatically when your friend joins."
-            : <>Their EraPrint is {invite.owner.primaryEra.name} ×{" "}
-                {invite.owner.secondaryEra.name}. Join with your EraPrint to see
+            : <>Their Eraprint is {invite.owner.primaryEra.name} ×{" "}
+                {invite.owner.secondaryEra.name}. Join with your Eraprint to see
                 what you share and where you differ.</>}
         </p>
 
@@ -155,7 +155,7 @@ export function MatchInviteClient({
           <div className="match-action-stack">
             <p role="alert">This EraMatch invite has expired.</p>
             <Link className="primary-button" href="/">
-              Back to EraPrint
+              Back to Eraprint
             </Link>
           </div>
         ) : loading ? (
@@ -183,7 +183,7 @@ export function MatchInviteClient({
             )}
             {viewer.snapshotId && (
               <Link className="secondary-button" href={`/result/${viewer.snapshotId}`}>
-                ← Back to My EraPrint
+                ← Back to My Eraprint
               </Link>
             )}
           </div>
@@ -195,16 +195,16 @@ export function MatchInviteClient({
               onClick={join}
               disabled={joining}
             >
-              {joining ? "Creating EraMatch…" : "Use my EraPrint"}
+              {joining ? "Creating EraMatch…" : "Use my Eraprint"}
             </button>
             <Link className="secondary-button" href="/play">
-              Take a new EraPrint
+              Take a new Eraprint
             </Link>
           </div>
         ) : (
           <div className="match-action-stack">
             <Link className="primary-button" href="/play">
-              Take EraPrint to join
+              Take Eraprint to join
             </Link>
           </div>
         )}

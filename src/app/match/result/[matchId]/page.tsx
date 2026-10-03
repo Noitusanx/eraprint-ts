@@ -7,7 +7,7 @@ export default async function MatchResultPage({ params }: { params: Promise<{ ma
   const result = await fetchPublicMatchResult(matchId);
 
   if (!result) {
-    return <main className="result-shell"><section className="empty-result-card"><p className="eyebrow">ERAMATCH RESULT</p><h1>This match result is not available.</h1><p>Check the link and try again.</p><Link className="primary-button" href="/">Back to EraPrint</Link></section></main>;
+    return <main className="result-shell"><section className="empty-result-card"><p className="eyebrow">ERAMATCH RESULT</p><h1>This match result is not available.</h1><p>Check the link and try again.</p><Link className="primary-button" href="/">Back to Eraprint</Link></section></main>;
   }
 
   return <MatchResultDisplay result={result} />;

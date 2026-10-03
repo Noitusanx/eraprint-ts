@@ -9,7 +9,7 @@ export async function POST(request: Request) {
 
     if (!Array.isArray(answers) || answers.length !== INITIAL_DECISIONS) {
       return NextResponse.json(
-        { error: `EraPrint result requires exactly ${INITIAL_DECISIONS} answers.` },
+        { error: `Eraprint result requires exactly ${INITIAL_DECISIONS} answers.` },
         { status: 400 },
       );
     }
@@ -27,7 +27,7 @@ export async function POST(request: Request) {
   } catch (error) {
     return NextResponse.json(
       {
-        error: error instanceof Error ? error.message : "Unable to calculate EraPrint.",
+        error: error instanceof Error ? error.message : "Unable to calculate Eraprint.",
       },
       { status: 400 },
     );

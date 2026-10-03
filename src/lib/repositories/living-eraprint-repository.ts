@@ -6,7 +6,7 @@ async function authenticatedFetch(path: string, init?: RequestInit) {
   const supabase = getSupabaseBrowserClient();
   if (!supabase) throw new Error("Supabase is not configured.");
   const session = await supabase.auth.getSession();
-  if (!session.data.session?.access_token) throw new Error("This EraPrint is not owned by this browser session.");
+  if (!session.data.session?.access_token) throw new Error("This Eraprint is not owned by this browser session.");
   return fetch(path, {
     ...init,
     headers: {
@@ -43,7 +43,7 @@ export type LivingState = {
 async function readJson<T>(response: Response): Promise<T> {
   const body = await response.json() as T & { error?: string; code?: string };
   if (!response.ok) {
-    const error = new Error(body.error ?? "Living EraPrint request failed.");
+    const error = new Error(body.error ?? "Living Eraprint request failed.");
     error.name = body.code ?? "LIVING_ERAPRINT_ERROR";
     throw error;
   }

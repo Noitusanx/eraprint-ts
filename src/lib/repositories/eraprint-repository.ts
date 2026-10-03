@@ -5,7 +5,7 @@ async function authenticatedAccessToken(): Promise<string> {
   const supabase = getSupabaseBrowserClient();
   if (!supabase) throw new Error("Supabase is required to verify this result.");
   const session = (await supabase.auth.getSession()).data.session;
-  if (!session?.access_token) throw new Error("No authenticated EraPrint session was found.");
+  if (!session?.access_token) throw new Error("No authenticated Eraprint session was found.");
   return session.access_token;
 }
 
@@ -64,7 +64,7 @@ export async function persistCompletedEraPrint(
     };
 
     if (!response.ok || !body.persisted || !body.sessionId || !body.snapshotId) {
-      throw new Error(body.error ?? "Server did not persist the EraPrint.");
+      throw new Error(body.error ?? "Server did not persist the Eraprint.");
     }
 
     return {

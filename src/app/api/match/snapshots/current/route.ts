@@ -10,7 +10,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ snapshotId: (data as string | null) ?? null });
   } catch (error) {
     return NextResponse.json(
-      { error: safeSupabaseError(error, "Unable to find an EraPrint.") },
+      { error: safeSupabaseError(error, "Unable to find an Eraprint.") },
       { status: 400 },
     );
   }

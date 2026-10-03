@@ -77,11 +77,11 @@ export function buildClarityExplanation(result: EraPrintResult): string {
         ? "your answers formed a fairly clear profile, while some signals are still closer to the middle."
         : "your profile is starting to take shape, but several signals are still close to the middle.";
 
-  return `Clarity shows how clearly your answers came together to form your EraPrint. It is not an accuracy score. At ${Math.round(result.clarity)}%, ${valueExplanation}`;
+  return `Clarity shows how clearly your answers came together to form your Eraprint. It is not an accuracy score. At ${Math.round(result.clarity)}%, ${valueExplanation}`;
 }
 
 export const ERA_BLEND_EXPLANATION =
-  "Your eight signals make up your EraPrint. Each Era has its own mix of those signals. The closer that mix is to yours, the more strongly the Era appears in your Era Blend.";
+  "Your eight signals make up your Eraprint. Each Era has its own mix of those signals. The closer that mix is to yours, the more strongly the Era appears in your Era Blend.";
 
 const ERA_ALIGNMENT_TRAITS: Record<string, [TraitCode, TraitCode]> = {
   DEBUT: ["ROM", "SOC"],

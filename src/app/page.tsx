@@ -9,7 +9,7 @@ export default function HomePage() {
       <section className="landing-card">
         <div className="brand-row">
           <span className="brand-mark">13</span>
-          <span className="brand-name">EraPrint</span>
+          <span className="brand-name">Eraprint</span>
         </div>
 
         <div className="hero-copy">
@@ -17,7 +17,7 @@ export default function HomePage() {
           <h1>
             There are millions of fans.
             <br />
-            Your EraPrint is still yours.
+            Your Eraprint is still yours.
           </h1>
           <p className="hero-subtitle">
             Your personality, in Taylor Swift eras.
@@ -29,7 +29,7 @@ export default function HomePage() {
 
         <div className="landing-actions">
           <Link className="primary-button" href="/play">
-            Discover my EraPrint
+            Discover my Eraprint
             <span aria-hidden>→</span>
           </Link>
         </div>

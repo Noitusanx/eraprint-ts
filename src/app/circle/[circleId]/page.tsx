@@ -14,9 +14,9 @@ export default async function CircleLobbyPage({ params, searchParams }: { params
     if (fromSnapshotId) query.set("fromSnapshotId", fromSnapshotId);
     redirect(`/circle/${circleId}${query.size ? `?${query.toString()}` : ""}`);
   }
-  if (!circleId) return <main className="result-shell"><section className="empty-result-card"><p className="eyebrow">CIRCLE</p><h1>This Circle is not available.</h1><p>The link may be invalid or no longer exist.</p><Link className="primary-button" href="/">Back to EraPrint</Link></section></main>;
+  if (!circleId) return <main className="result-shell"><section className="empty-result-card"><p className="eyebrow">CIRCLE</p><h1>This Circle is not available.</h1><p>The link may be invalid or no longer exist.</p><Link className="primary-button" href="/">Back to Eraprint</Link></section></main>;
   const lobby = await fetchPublicCircle(circleId);
-  if (!lobby) return <main className="result-shell"><section className="empty-result-card"><p className="eyebrow">CIRCLE</p><h1>This Circle is not available.</h1><p>The link may be invalid or no longer exist.</p><Link className="primary-button" href="/">Back to EraPrint</Link></section></main>;
+  if (!lobby) return <main className="result-shell"><section className="empty-result-card"><p className="eyebrow">CIRCLE</p><h1>This Circle is not available.</h1><p>The link may be invalid or no longer exist.</p><Link className="primary-button" href="/">Back to Eraprint</Link></section></main>;
   return (
     <CircleLobbyClient
       lobby={lobby}

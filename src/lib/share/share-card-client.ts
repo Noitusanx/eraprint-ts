@@ -22,7 +22,7 @@ export async function createShareCardFile(
   if (payload.kind === "personal" && "snapshotId" in payload) {
     const supabase = getSupabaseBrowserClient();
     const session = supabase ? (await supabase.auth.getSession()).data.session : null;
-    if (!session?.access_token) throw new Error("Only the owner can download this EraPrint card.");
+    if (!session?.access_token) throw new Error("Only the owner can download this Eraprint card.");
     headers.Authorization = `Bearer ${session.access_token}`;
   }
   const response = await fetch(path, {

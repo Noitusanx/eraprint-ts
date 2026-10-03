@@ -118,7 +118,7 @@ export function ResultDisplay({
   const shareUrl = getShareUrl();
 
   const shareText = [
-    `My EraPrint: ${result.primaryEra.name} × ${result.secondaryEra.name}`,
+    `My Eraprint: ${result.primaryEra.name} × ${result.secondaryEra.name}`,
     result.archetype,
     `Hidden era: ${result.hiddenEra.name}`,
     shareUrl ? shareUrl : "",
@@ -186,7 +186,7 @@ export function ResultDisplay({
       setCardError(
         error instanceof Error
           ? error.message
-          : "Unable to share EraPrint card.",
+          : "Unable to share Eraprint card.",
       );
     } finally {
       setCardLoading(false);
@@ -207,8 +207,8 @@ export function ResultDisplay({
       if (navigator.share) {
         try {
           await navigator.share({
-            title: "Compare EraPrints with me",
-            text: "Join my EraMatch invite to see what our EraPrints share.",
+            title: "Compare Eraprints with me",
+            text: "Join my EraMatch invite to see what our Eraprints share.",
             url: nextUrl,
           });
         } catch (error) {
@@ -264,7 +264,7 @@ export function ResultDisplay({
       <section className="result-card">
         <header className="result-topbar">
           <Link className="wordmark" href="/">
-            EraPrint
+            Eraprint
           </Link>
         </header>
 
@@ -333,7 +333,7 @@ export function ResultDisplay({
               </div>
               <div
                 className="clarity-ring"
-                aria-label={`EraPrint clarity ${result.clarity}%`}
+                aria-label={`Eraprint clarity ${result.clarity}%`}
               >
                 <strong>{Math.round(result.clarity)}%</strong>
                 <span>clarity</span>
@@ -423,7 +423,7 @@ export function ResultDisplay({
 
             <h2>Made for sharing.</h2>
 
-            <p>Save your EraPrint card or share it straight to your story.</p>
+            <p>Save your Eraprint card or share it straight to your story.</p>
 
             {cardError && <p role="alert">{cardError}</p>}
           </div>
@@ -457,7 +457,7 @@ export function ResultDisplay({
           <section className="explore-together">
             <header className="explore-heading">
               <p className="eyebrow">EXPLORE TOGETHER</p>
-              <h2>See what happens when EraPrints meet.</h2>
+              <h2>See what happens when Eraprints meet.</h2>
               <p>Compare one-on-one or bring the whole group into the story.</p>
             </header>
 
@@ -496,7 +496,7 @@ export function ResultDisplay({
                 <p className="eyebrow">CIRCLE</p>
                 <h3>Bring the group together</h3>
                 <p>
-                  Combine 3–10 EraPrints and discover what your group has in
+                  Combine 3–10 Eraprints and discover what your group has in
                   common.
                 </p>
                 {circleError && (
@@ -577,7 +577,7 @@ export function ResultDisplay({
             </div>
           )}
           <Link className="text-link" href="/play">
-            Retake EraPrint →
+            Retake Eraprint →
           </Link>
         </footer>}
       </section>

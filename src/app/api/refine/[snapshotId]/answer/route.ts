@@ -19,7 +19,7 @@ export async function POST(request: Request, context: { params: Promise<{ snapsh
     const owned = await getOwnedSnapshotContext(supabase, snapshotId);
     assertCurrentRefinementVersion(owned.snapshot);
     if (!owned.isLatest) {
-      throw new RefinementError("NOT_LATEST_SNAPSHOT", "Refinement must update your latest EraPrint.", 409);
+      throw new RefinementError("NOT_LATEST_SNAPSHOT", "Refinement must update your latest Eraprint.", 409);
     }
 
     const [sessionResponse, answersResponse] = await Promise.all([

@@ -17,7 +17,7 @@ export async function POST(request: Request, context: { params: Promise<{ snapsh
     if (!owned.isLatest) {
       throw new RefinementError(
         "NOT_LATEST_SNAPSHOT",
-        "Refinement must start from your latest EraPrint.",
+        "Refinement must start from your latest Eraprint.",
         409,
       );
     }

@@ -13,7 +13,7 @@ export async function POST(request: Request, context: { params: Promise<{ snapsh
     const supabase = await getAuthenticatedSupabase(request);
     const owned = await getOwnedSnapshotContext(supabase, snapshotId);
     assertCurrentRefinementVersion(owned.snapshot);
-    if (!owned.isLatest) throw new Error("Refinement must start from your latest EraPrint.");
+    if (!owned.isLatest) throw new Error("Refinement must start from your latest Eraprint.");
     const errors = validateLivingEraPrintAnswers(owned.answers, refinementAnswers);
     if (errors.length) throw new Error(errors[0]);
 
