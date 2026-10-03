@@ -20,8 +20,10 @@ export default function HomePage() {
             Your EraPrint is still yours.
           </h1>
           <p className="hero-subtitle">
-            Make <span className="hero-thirteen">13</span> choices and see what
-            your EraPrint looks like.
+            Your personality, in Taylor Swift eras.
+            <br />
+            Make <span className="hero-thirteen">13</span> choices to discover your
+            unique era blend.
           </p>
         </div>
 
